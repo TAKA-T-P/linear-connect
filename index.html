@@ -1,0 +1,1810 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>リニア×コネクト！</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0a0a1a;
+  --panel: #0f0f2a;
+  --accent: #00d4ff;
+  --accent2: #ff6b35;
+  --accent3: #7c3aed;
+  --gold: #ffd700;
+  --text: #e0e8ff;
+  --text-dim: #6a7a9a;
+  --correct: #00ff88;
+  --wrong: #ff4444;
+  --border: #1e2a4a;
+}
+
+html, body {
+  width: 100%; height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Segoe UI', sans-serif;
+  overflow: hidden;
+  touch-action: manipulation;
+}
+
+#app {
+  width: 100%; height: 100%;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+}
+
+/* ===== SCREEN ===== */
+.screen {
+  display: none;
+  width: 100%; height: 100%;
+  flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 16px;
+}
+.screen.active { display: flex; }
+
+/* ===== TITLE SCREEN ===== */
+#title-screen {
+  background: radial-gradient(ellipse at center, #0d1040 0%, #050510 100%);
+  justify-content: flex-start;
+  padding-top: 32px;
+  overflow-y: auto;
+}
+
+.title-logo {
+  text-align: center;
+  margin-bottom: 28px;
+}
+.title-logo .app-name {
+  font-size: clamp(28px, 8vw, 48px);
+  font-weight: 900;
+  letter-spacing: 2px;
+  background: linear-gradient(135deg, var(--accent), var(--accent3), var(--accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: none;
+  line-height: 1.1;
+}
+.title-logo .subtitle {
+  font-size: 13px;
+  color: var(--text-dim);
+  letter-spacing: 3px;
+  margin-top: 4px;
+}
+
+.title-section {
+  width: 100%;
+  max-width: 400px;
+  margin-bottom: 18px;
+}
+.title-section label {
+  display: block;
+  font-size: 11px;
+  color: var(--accent);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  padding-left: 2px;
+}
+
+/* Mode selector buttons */
+.mode-btns {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+}
+.mode-btn {
+  flex: 1;
+  padding: 14px 8px;
+  border: 2px solid var(--border);
+  background: var(--panel);
+  color: var(--text-dim);
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 1px;
+}
+.mode-btn.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(0, 212, 255, 0.08);
+  box-shadow: 0 0 12px rgba(0, 212, 255, 0.3);
+}
+
+/* Toggle buttons */
+.toggle-group {
+  display: flex;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  width: 100%;
+}
+.toggle-btn {
+  flex: 1;
+  padding: 12px 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.toggle-btn.active {
+  background: var(--accent3);
+  color: #fff;
+}
+
+/* Start button */
+.start-btn {
+  width: 100%;
+  max-width: 400px;
+  padding: 18px;
+  background: linear-gradient(135deg, var(--accent), var(--accent3));
+  color: #fff;
+  border: none;
+  border-radius: 14px;
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: 3px;
+  cursor: pointer;
+  margin-top: 4px;
+  box-shadow: 0 4px 20px rgba(0, 212, 255, 0.4);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.start-btn:active { transform: scale(0.97); box-shadow: 0 2px 10px rgba(0,212,255,0.3); }
+
+.credit {
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-top: 20px;
+  padding-bottom: 12px;
+  letter-spacing: 1px;
+}
+
+/* ===== COUNTDOWN SCREEN ===== */
+#countdown-screen {
+  background: radial-gradient(ellipse at center, #0d1040 0%, #050510 100%);
+}
+.countdown-mode-label {
+  font-size: 16px;
+  color: var(--accent);
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+  text-align: center;
+}
+.countdown-instruction {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 40px;
+  text-align: center;
+}
+.countdown-number {
+  font-size: clamp(80px, 25vw, 140px);
+  font-weight: 900;
+  line-height: 1;
+  background: linear-gradient(135deg, var(--accent), var(--accent3));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  transition: transform 0.1s;
+}
+.countdown-number.start-text {
+  font-size: clamp(40px, 12vw, 72px);
+  background: linear-gradient(135deg, var(--correct), var(--accent));
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+/* ===== GAME SCREEN ===== */
+#game-screen {
+  padding: 0;
+  justify-content: flex-start;
+  background: #060616;
+}
+
+.game-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.timer-block {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.timer-icon { font-size: 14px; }
+.timer-value {
+  font-size: 22px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+  min-width: 40px;
+}
+.timer-value.warning { color: var(--accent2); animation: pulse 0.5s infinite alternate; }
+@keyframes pulse { from { opacity: 1; } to { opacity: 0.5; } }
+
+.score-block {
+  flex: 1;
+  text-align: center;
+}
+.score-label { font-size: 10px; color: var(--text-dim); letter-spacing: 1px; }
+.score-value {
+  font-size: 20px;
+  font-weight: 900;
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
+}
+
+.combo-block {
+  text-align: center;
+  min-width: 60px;
+}
+.combo-label { font-size: 10px; color: var(--text-dim); letter-spacing: 1px; }
+.combo-value {
+  font-size: 20px;
+  font-weight: 900;
+  color: var(--accent2);
+}
+
+.header-btns {
+  display: flex;
+  gap: 6px;
+  margin-left: 4px;
+}
+.small-btn {
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text-dim);
+  border-radius: 7px;
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.small-btn:active { background: var(--border); }
+
+/* Combo gauge */
+.combo-gauge-wrap {
+  width: 100%;
+  height: 5px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+.combo-gauge-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent2), var(--gold));
+  transition: width 0.05s linear;
+}
+
+/* Game body */
+.game-body {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* ===== ANSWER MODE LAYOUT ===== */
+.answer-graph-area {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  min-height: 0;
+  position: relative;
+}
+
+.answer-input-area {
+  flex-shrink: 0;
+  padding: 8px;
+  background: var(--panel);
+  border-top: 1px solid var(--border);
+}
+
+.answer-display {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 8px;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 4px;
+  flex-wrap: wrap;
+}
+.answer-display .prefix {
+  font-family: 'Times New Roman', serif;
+  font-style: italic;
+  font-weight: bold;
+  color: var(--text-dim);
+}
+.answer-display .input-val {
+  color: var(--accent);
+  font-family: 'Times New Roman', serif;
+  font-style: italic;
+  font-weight: bold;
+}
+
+.answer-btns-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 6px;
+}
+.ans-btn {
+  padding: 12px 4px;
+  border: 1px solid var(--border);
+  background: #0d1a2e;
+  color: var(--text);
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.1s, transform 0.1s;
+  font-family: inherit;
+  touch-action: manipulation;
+}
+.ans-btn:active { background: var(--accent3); transform: scale(0.95); }
+.ans-btn.special { color: var(--accent2); border-color: rgba(255,107,53,0.4); }
+.ans-btn.danger { color: var(--wrong); border-color: rgba(255,68,68,0.4); }
+
+/* ===== CONNECT MODE LAYOUT ===== */
+.connect-formula-area {
+  flex-shrink: 0;
+  padding: 10px 16px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.connect-formula {
+  font-size: 26px;
+  font-weight: 700;
+  font-family: 'Times New Roman', serif;
+  font-style: italic;
+  color: var(--gold);
+}
+
+.connect-graph-area {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  min-height: 0;
+  position: relative;
+}
+
+.connect-actions {
+  flex-shrink: 0;
+  padding: 8px 12px;
+  background: var(--panel);
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: center;
+}
+.clear-pts-btn {
+  padding: 10px 28px;
+  border: 1px solid var(--accent2);
+  background: rgba(255,107,53,0.1);
+  color: var(--accent2);
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.clear-pts-btn:active { background: rgba(255,107,53,0.3); }
+
+/* ===== CANVAS ===== */
+canvas {
+  display: block;
+  touch-action: none;
+}
+
+/* ===== FEEDBACK OVERLAY ===== */
+.feedback-overlay {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  pointer-events: none;
+  z-index: 100;
+  display: none;
+}
+.feedback-overlay.visible { display: block; animation: feedbackPop 0.18s ease-out; }
+@keyframes feedbackPop {
+  from { transform: translate(-50%, -50%) scale(0.7); opacity: 0; }
+  to   { transform: translate(-50%, -50%) scale(1);   opacity: 1; }
+}
+.feedback-text {
+  font-size: clamp(36px, 10vw, 52px);
+  font-weight: 900;
+  color: var(--correct);
+  text-shadow: 0 0 20px rgba(0,255,136,0.8), 0 2px 8px rgba(0,0,0,0.9);
+  line-height: 1.1;
+}
+.feedback-combo {
+  font-size: clamp(22px, 6vw, 32px);
+  font-weight: 900;
+  color: var(--gold);
+  text-shadow: 0 0 16px rgba(255,215,0,0.8), 0 2px 8px rgba(0,0,0,0.9);
+  margin-top: 4px;
+  letter-spacing: 1px;
+}
+.feedback-timeout {
+  font-size: 40px;
+  font-weight: 900;
+  color: var(--accent2);
+  text-shadow: 0 0 20px rgba(255,107,53,0.8), 0 2px 8px rgba(0,0,0,0.9);
+}
+
+/* ===== RESULT SCREEN ===== */
+#result-screen {
+  background: radial-gradient(ellipse at center, #0d1040 0%, #050510 100%);
+  justify-content: flex-start;
+  padding-top: 24px;
+  overflow-y: auto;
+}
+
+.result-title {
+  font-size: 13px;
+  letter-spacing: 4px;
+  color: var(--accent);
+  margin-bottom: 16px;
+}
+
+.rank-display {
+  text-align: center;
+  margin-bottom: 20px;
+}
+.rank-label { font-size: 12px; color: var(--text-dim); letter-spacing: 2px; }
+.rank-value {
+  font-size: clamp(40px, 12vw, 64px);
+  font-weight: 900;
+  color: var(--gold);
+  line-height: 1.1;
+  text-shadow: 0 0 20px rgba(255,215,0,0.6);
+}
+
+.result-stats {
+  width: 100%;
+  max-width: 400px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.stat-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  text-align: center;
+}
+.stat-card.full-width { grid-column: 1 / -1; }
+.stat-label { font-size: 10px; color: var(--text-dim); letter-spacing: 1px; margin-bottom: 4px; }
+.stat-value { font-size: 22px; font-weight: 900; color: var(--text); }
+.stat-value.highlight { color: var(--gold); }
+.stat-value.hi { color: var(--accent2); }
+
+.result-btns {
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  gap: 10px;
+}
+.result-btn {
+  flex: 1;
+  padding: 16px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+}
+.result-btn.primary {
+  background: linear-gradient(135deg, var(--accent), var(--accent3));
+  color: #fff;
+}
+.result-btn.secondary {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+/* Math display (fractions) */
+.math-frac {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  vertical-align: middle;
+  font-family: 'Times New Roman', serif;
+  font-style: italic;
+  font-weight: bold;
+  line-height: 1;
+  margin: 0 1px;
+}
+.math-frac .numer {
+  border-bottom: 2px solid currentColor;
+  padding: 0 2px;
+  font-size: 0.75em;
+  line-height: 1.3;
+}
+.math-frac .denom {
+  padding: 0 2px;
+  font-size: 0.75em;
+  line-height: 1.3;
+}
+.math-var {
+  font-family: 'Times New Roman', serif;
+  font-style: italic;
+  font-weight: bold;
+}
+
+/* Animations */
+@keyframes countPop {
+  0% { transform: scale(1.5); opacity: 0; }
+  30% { transform: scale(1); opacity: 1; }
+  70% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(0.5); opacity: 0; }
+}
+.count-anim { animation: countPop 0.9s ease-in-out; }
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- TITLE SCREEN -->
+<div id="title-screen" class="screen active">
+  <div class="title-logo">
+    <div class="app-name">リニア×コネクト！</div>
+    <div class="subtitle">LINEAR FUNCTION TRAINING</div>
+  </div>
+
+  <div class="title-section">
+    <label>PLAY MODE</label>
+    <div class="mode-btns">
+      <button class="mode-btn active" onclick="selectMode('answer')">アンサー</button>
+      <button class="mode-btn" onclick="selectMode('connect')">コネクト</button>
+    </div>
+  </div>
+
+  <div class="title-section">
+    <label>出題範囲</label>
+    <div class="toggle-group">
+      <button class="toggle-btn active" onclick="selectRange('linear')">一次関数</button>
+      <button class="toggle-btn" onclick="selectRange('proportion')">比例</button>
+    </div>
+  </div>
+
+  <div class="title-section">
+    <label>プレイ時間</label>
+    <div class="toggle-group">
+      <button class="toggle-btn active" onclick="selectTime(60)">1分</button>
+      <button class="toggle-btn" onclick="selectTime(180)">3分</button>
+    </div>
+  </div>
+
+  <button class="start-btn" onclick="startGame()">S T A R T</button>
+  <div class="credit">©2026 T.TAKEMOTO / KEC Glows</div>
+</div>
+
+<!-- COUNTDOWN SCREEN -->
+<div id="countdown-screen" class="screen">
+  <div class="countdown-mode-label" id="cd-mode-label"></div>
+  <div class="countdown-instruction" id="cd-instruction"></div>
+  <div class="countdown-number" id="cd-number">3</div>
+</div>
+
+<!-- GAME SCREEN -->
+<div id="game-screen" class="screen">
+  <!-- Header -->
+  <div class="game-header">
+    <div class="timer-block">
+      <span class="timer-icon">⏱</span>
+      <span class="timer-value" id="timer-val">60</span>
+    </div>
+    <div class="score-block">
+      <div class="score-label">SCORE</div>
+      <div class="score-value" id="score-val">0</div>
+    </div>
+    <div class="combo-block">
+      <div class="combo-label">COMBO</div>
+      <div class="combo-value" id="combo-val">0</div>
+    </div>
+    <div class="header-btns">
+      <button class="small-btn" onclick="retryGame()">再挑戦</button>
+      <button class="small-btn" onclick="goTitle()">戻る</button>
+    </div>
+  </div>
+
+  <!-- Combo gauge -->
+  <div class="combo-gauge-wrap">
+    <div class="combo-gauge-bar" id="combo-gauge" style="width:100%"></div>
+  </div>
+
+  <!-- Game body (mode-specific content injected here) -->
+  <div class="game-body" id="game-body"></div>
+</div>
+
+<!-- RESULT SCREEN -->
+<div id="result-screen" class="screen">
+  <div class="result-title">RESULT</div>
+
+  <div class="rank-display">
+    <div class="rank-label">段位</div>
+    <div class="rank-value" id="result-rank">初段</div>
+  </div>
+
+  <div class="result-stats">
+    <div class="stat-card full-width">
+      <div class="stat-label">SCORE</div>
+      <div class="stat-value highlight" id="result-score">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">BEST</div>
+      <div class="stat-value hi" id="result-hi">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">正解数</div>
+      <div class="stat-value" id="result-correct">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">最大コンボ</div>
+      <div class="stat-value" id="result-maxcombo">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">平均正解時間</div>
+      <div class="stat-value" id="result-avgtime">--</div>
+    </div>
+  </div>
+
+  <div class="result-btns">
+    <button class="result-btn primary" onclick="retryGame()">リトライ</button>
+    <button class="result-btn secondary" onclick="goTitle()">タイトルへ</button>
+  </div>
+</div>
+
+<!-- Feedback overlay -->
+<div class="feedback-overlay" id="feedback-overlay">
+  <div class="feedback-text" id="feedback-text"></div>
+  <div class="feedback-combo" id="feedback-combo"></div>
+</div>
+
+<script>
+// ========================
+// STATE
+// ========================
+const state = {
+  mode: 'answer',       // 'answer' | 'connect'
+  range: 'linear',     // 'linear' | 'proportion'
+  timeLimit: 60,
+
+  // runtime
+  score: 0,
+  combo: 0,
+  maxCombo: 0,
+  correctCount: 0,
+  totalAnswerTime: 0,
+  questionStartTime: 0,
+  timerRemaining: 0,
+  timerInterval: null,
+  gaugeInterval: null,
+  gaugeValue: 1.0,     // 0~1
+  gaugeDuration: 10,   // seconds for full gauge
+  gaugeStartTime: 0,
+  isTimeUp: false,
+  afterTimeUpTimeout: null,
+  isPaused: false,     // true while correct-answer feedback is showing
+  currentQuestion: null,
+  isSpecial: false,    // special (no-grid) question
+  lastComboAtSpecialStart: 0,
+
+  // answer mode
+  answerInput: [],     // token array
+
+  // connect mode
+  connectPoints: [],   // [{x, y}, ...]
+};
+
+// ========================
+// TITLE SCREEN
+// ========================
+function selectMode(mode) {
+  state.mode = mode;
+  document.querySelectorAll('.mode-btn').forEach((b, i) => {
+    b.classList.toggle('active', (i === 0 && mode === 'answer') || (i === 1 && mode === 'connect'));
+  });
+}
+
+function selectRange(range) {
+  state.range = range;
+  const btns = document.querySelectorAll('.toggle-group')[0].querySelectorAll('.toggle-btn');
+  btns[0].classList.toggle('active', range === 'linear');
+  btns[1].classList.toggle('active', range === 'proportion');
+}
+
+function selectTime(sec) {
+  state.timeLimit = sec;
+  const btns = document.querySelectorAll('.toggle-group')[1].querySelectorAll('.toggle-btn');
+  btns[0].classList.toggle('active', sec === 60);
+  btns[1].classList.toggle('active', sec === 180);
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ========================
+// COUNTDOWN
+// ========================
+function startGame() {
+  // setup countdown labels
+  const modeLabel = state.mode === 'answer' ? 'ANSWER MODE' : 'CONNECT MODE';
+  document.getElementById('cd-mode-label').textContent = modeLabel;
+
+  let instr = 'グラフから式を答えよ！';
+  if (state.mode === 'connect') {
+    instr = state.range === 'proportion' ? '1点をタップして直線を引け！' : '2点をタップして直線を引け！';
+  }
+  document.getElementById('cd-instruction').textContent = instr;
+
+  showScreen('countdown-screen');
+  runCountdown();
+}
+
+function runCountdown() {
+  const el = document.getElementById('cd-number');
+  const steps = ['3', '2', '1', 'START!'];
+  let i = 0;
+
+  function showStep() {
+    if (i >= steps.length) {
+      showScreen('game-screen');
+      // Wait one frame for layout to settle before measuring canvas area
+      requestAnimationFrame(() => setTimeout(initGame, 0));
+      return;
+    }
+    el.textContent = steps[i];
+    el.className = 'countdown-number' + (steps[i] === 'START!' ? ' start-text' : '');
+    el.classList.add('count-anim');
+    playSound(steps[i] === 'START!' ? 'start' : 'tick');
+    setTimeout(() => { el.classList.remove('count-anim'); }, 900);
+    i++;
+    setTimeout(showStep, 900);
+  }
+  showStep();
+}
+
+// ========================
+// GAME INIT
+// ========================
+function initGame() {
+  state.score = 0;
+  state.combo = 0;
+  state.maxCombo = 0;
+  state.correctCount = 0;
+  state.totalAnswerTime = 0;
+  state.timerRemaining = state.timeLimit;
+  state.isTimeUp = false;
+  state.isPaused = false;
+  state.answerInput = [];
+  state.connectPoints = [];
+  state.isSpecial = false;
+  state.lastComboAtSpecialStart = 0;
+
+  updateHUD();
+  buildGameBody();
+  nextQuestion();
+  startTimer();
+  startGauge();
+
+  // Re-init canvas after layout settles (handles the first-render sizing)
+  setTimeout(() => {
+    if (document.getElementById('graph-canvas')) {
+      initCanvas();
+      redrawGraph();
+    }
+  }, 80);
+}
+
+function updateHUD() {
+  document.getElementById('timer-val').textContent = state.timerRemaining;
+  document.getElementById('score-val').textContent = state.score;
+  document.getElementById('combo-val').textContent = state.combo;
+
+  const tv = document.getElementById('timer-val');
+  tv.classList.toggle('warning', state.timerRemaining <= 10);
+}
+
+// ========================
+// TIMER
+// ========================
+function startTimer() {
+  if (state.timerInterval) clearInterval(state.timerInterval);
+  state.timerInterval = setInterval(() => {
+    if (state.isPaused) return;
+    if (state.timerRemaining > 0) {
+      state.timerRemaining--;
+      updateHUD();
+      if (state.timerRemaining === 0) {
+        state.isTimeUp = true;
+        // After 10 more seconds, force end
+        state.afterTimeUpTimeout = setTimeout(() => {
+          showTimeoutAndEnd();
+        }, 10000);
+      }
+    }
+  }, 1000);
+}
+
+function stopTimer() {
+  if (state.timerInterval) clearInterval(state.timerInterval);
+  if (state.afterTimeUpTimeout) clearTimeout(state.afterTimeUpTimeout);
+}
+
+function showTimeoutAndEnd() {
+  stopTimer();
+  stopGauge();
+  const fb = document.getElementById('feedback-overlay');
+  const ft = document.getElementById('feedback-text');
+  ft.className = 'feedback-timeout';
+  ft.textContent = '時間切れ';
+  document.getElementById('feedback-combo').textContent = '';
+  fb.className = 'feedback-overlay visible';
+  setTimeout(() => {
+    fb.className = 'feedback-overlay';
+    ft.className = 'feedback-text';
+    showResult();
+  }, 1000);
+}
+
+// ========================
+// COMBO GAUGE
+// ========================
+function getGaugeSpeed() {
+  const n = state.combo;
+  const base = state.timeLimit === 60 ? (1 + 0.1 * n) : (1 + 0.05 * n);
+  return base; // multiplier
+}
+
+function startGauge() {
+  stopGauge();
+  state.gaugeValue = 1.0;
+  document.getElementById('combo-gauge').style.width = '100%';
+
+  // At combo=1 the gauge stays full — no decrease until combo≥2
+  if (state.combo <= 1) return;
+
+  state.gaugeStartTime = performance.now();
+  const speed = getGaugeSpeed();
+  const duration = 10000 / speed; // ms
+
+  state.gaugeInterval = setInterval(() => {
+    if (state.isPaused) return;
+    const elapsed = performance.now() - state.gaugeStartTime;
+    state.gaugeValue = Math.max(0, 1 - elapsed / duration);
+    document.getElementById('combo-gauge').style.width = (state.gaugeValue * 100) + '%';
+
+    if (state.gaugeValue <= 0) {
+      stopGauge();
+      // combo break → reset to 0; next correct answer will be combo=1 (no gauge)
+      if (state.combo > 0) {
+        state.combo = 0;
+        document.getElementById('combo-val').textContent = state.combo;
+        if (state.isSpecial) {
+          state.isSpecial = false;
+          redrawGraph();
+        }
+      }
+    }
+  }, 50);
+}
+
+function resetGauge() {
+  stopGauge();
+  startGauge();
+}
+
+function stopGauge() {
+  if (state.gaugeInterval) clearInterval(state.gaugeInterval);
+}
+
+// ========================
+// QUESTION GENERATION
+// ========================
+function gcd(a, b) {
+  a = Math.abs(a); b = Math.abs(b);
+  while (b) { let t = b; b = a % b; a = t; }
+  return a;
+}
+
+// Returns {aNumer, aDenom, b} where slope = aNumer/aDenom (reduced), b is integer
+function generateQuestion() {
+  // Possible slopes: integers |a|=1..4, fractions num/den both ≤4, gcd=1
+  const intSlopes = [1,2,3,4,-1,-2,-3,-4];
+  const fracSlopes = [];
+  for (let num = 1; num <= 4; num++) {
+    for (let den = 2; den <= 4; den++) {
+      if (gcd(num, den) === 1) {
+        fracSlopes.push({n: num, d: den});
+        fracSlopes.push({n: -num, d: den});
+      }
+    }
+  }
+
+  let aNumer, aDenom;
+  if (Math.random() < 0.5) {
+    // integer slope
+    const s = intSlopes[Math.floor(Math.random() * intSlopes.length)];
+    aNumer = s; aDenom = 1;
+  } else {
+    const f = fracSlopes[Math.floor(Math.random() * fracSlopes.length)];
+    aNumer = f.n; aDenom = f.d;
+  }
+
+  let b = 0;
+  if (state.range === 'linear') {
+    b = Math.floor(Math.random() * 11) - 5; // -5 to 5
+  }
+  // proportion: b=0 always
+
+  return { aNumer, aDenom, b };
+}
+
+// Generate special question (passes through non-origin integer points on both axes)
+function generateSpecialQuestion() {
+  // y = (b_y/b_x)*x + b_y  where x-intercept = -b_x, y-intercept = b_y
+  // Actually: passes through (xInt,0) and (0,yInt) where xInt,yInt are non-zero integers in range
+  let attempts = 0;
+  while (attempts < 200) {
+    attempts++;
+    const xInt = (Math.floor(Math.random() * 5) + 1) * (Math.random() < 0.5 ? 1 : -1); // ±1..5
+    const yInt = (Math.floor(Math.random() * 5) + 1) * (Math.random() < 0.5 ? 1 : -1);
+    // slope = (yInt - 0) / (0 - xInt) = -yInt/xInt
+    const aNumer = -yInt;
+    const aDenom = xInt;
+    const g = gcd(Math.abs(aNumer), Math.abs(aDenom));
+    const rn = aNumer / g;
+    const rd = aDenom / g;
+    // Ensure reduced denom positive
+    const sign = rd < 0 ? -1 : 1;
+    const fn = rn * sign;
+    const fd = rd * sign;
+    // b = yInt
+    const b = yInt;
+    // Check fn != 0
+    if (fn === 0) continue;
+    // Check |fn|<=5 and |fd|<=5
+    if (Math.abs(fn) > 5 || Math.abs(fd) > 5) continue;
+    // Check gcd(|fn|,fd)==1
+    if (gcd(Math.abs(fn), fd) !== 1) continue;
+    return { aNumer: fn, aDenom: fd, b, xIntercept: xInt, yIntercept: yInt };
+  }
+  // fallback
+  return { aNumer: 1, aDenom: 2, b: 2, xIntercept: -4, yIntercept: 2 };
+}
+
+function sameQuestion(a, b) {
+  return a && b && a.aNumer === b.aNumer && a.aDenom === b.aDenom && a.b === b.b;
+}
+
+function nextQuestion() {
+  const prevCombo = state.combo;
+  const prevQ = state.currentQuestion;
+  let q;
+  if (state.mode === 'answer' && state.range !== 'proportion' && prevCombo > 0 && prevCombo % 5 === 0 && !state.isSpecial) {
+    state.isSpecial = true;
+    q = generateSpecialQuestion();
+  } else {
+    if (state.isSpecial) state.isSpecial = false;
+    // Retry until different from previous question (max 20 attempts)
+    let attempts = 0;
+    do { q = generateQuestion(); attempts++; }
+    while (attempts < 20 && sameQuestion(q, prevQ));
+  }
+  state.currentQuestion = q;
+  state.questionStartTime = performance.now();
+
+  if (state.mode === 'answer') {
+    state.answerInput = [];
+    renderAnswerMode();
+  } else {
+    state.connectPoints = [];
+    if (state.range === 'proportion') {
+      state.connectPoints = [{x: 0, y: 0}]; // fixed origin
+    }
+    renderConnectMode();
+  }
+}
+
+// ========================
+// ANSWER CORRECT / WRONG
+// ========================
+function onCorrect() {
+  const elapsed = (performance.now() - state.questionStartTime) / 1000;
+  state.totalAnswerTime += elapsed;
+  state.correctCount++;
+  state.combo++;
+  if (state.combo > state.maxCombo) state.maxCombo = state.combo;
+
+  const points = 1000 + 100 * state.combo;
+  state.score += points;
+  updateHUD();
+
+  if (state.isSpecial) state.isSpecial = false;
+
+  // Pause timer and gauge while feedback is shown
+  state.isPaused = true;
+  showCorrectFeedback(state.combo);
+
+  if (state.isTimeUp) {
+    setTimeout(() => { stopTimer(); stopGauge(); showResult(); }, 800);
+  } else {
+    setTimeout(() => {
+      hideFeedback();
+      state.isPaused = false;
+      resetGauge();
+      nextQuestion();
+    }, 800);
+  }
+}
+
+function showCorrectFeedback(comboCount) {
+  playSound('correct');
+  const fb = document.getElementById('feedback-overlay');
+  document.getElementById('feedback-text').textContent = '正解！';
+  document.getElementById('feedback-combo').textContent = comboCount + ' Combo!!';
+  fb.className = 'feedback-overlay visible';
+}
+
+function hideFeedback() {
+  document.getElementById('feedback-overlay').className = 'feedback-overlay';
+}
+
+// ========================
+// RESULT SCREEN
+// ========================
+function showResult() {
+  hideFeedback();
+  stopTimer();
+  stopGauge();
+
+  const avgTime = state.correctCount > 0
+    ? (state.totalAnswerTime / state.correctCount).toFixed(2)
+    : '--';
+
+  const rank = calcRank(state.correctCount > 0 ? parseFloat(avgTime) : null);
+
+  document.getElementById('result-score').textContent = state.score.toLocaleString();
+  document.getElementById('result-correct').textContent = state.correctCount;
+  document.getElementById('result-maxcombo').textContent = state.maxCombo;
+  document.getElementById('result-avgtime').textContent = avgTime === '--' ? '--' : avgTime + '秒';
+  document.getElementById('result-rank').textContent = rank;
+
+  // High score
+  const hsKey = `hs_${state.mode}_${state.range}_${state.timeLimit}`;
+  const prevHi = parseInt(localStorage.getItem(hsKey) || '0');
+  const newHi = Math.max(prevHi, state.score);
+  localStorage.setItem(hsKey, newHi);
+  document.getElementById('result-hi').textContent = newHi.toLocaleString();
+
+  playSound('result');
+  showScreen('result-screen');
+}
+
+const RANKS = ['皆伝','十段','九段','八段','七段','六段','五段','四段','三段','二段','初段',
+               '1級','2級','3級','4級','5級','6級','7級','8級','9級','10級'];
+
+function calcRank(avgTime) {
+  if (avgTime === null) return '10級';
+  if (state.mode === 'answer') {
+    if (avgTime < 4.0) return '皆伝';
+    const steps = Math.floor((avgTime - 4.0) / 0.4);
+    return RANKS[Math.min(1 + steps, 20)];
+  } else {
+    if (avgTime < 3.0) return '皆伝';
+    const steps = Math.floor((avgTime - 3.0) / 0.35);
+    return RANKS[Math.min(1 + steps, 20)];
+  }
+}
+
+// ========================
+// NAVIGATION
+// ========================
+function retryGame() {
+  stopTimer(); stopGauge();
+  startGame();
+}
+
+function goTitle() {
+  stopTimer(); stopGauge();
+  showScreen('title-screen');
+}
+
+// ========================
+// BUILD GAME BODY
+// ========================
+function buildGameBody() {
+  const body = document.getElementById('game-body');
+  if (state.mode === 'answer') {
+    body.innerHTML = `
+      <div class="answer-graph-area" id="answer-graph-area">
+        <canvas id="graph-canvas"></canvas>
+      </div>
+      <div class="answer-input-area">
+        <div class="answer-display" id="answer-display">
+          <span class="prefix"><span class="math-var" style="font-family:'Times New Roman',serif;font-style:italic;font-weight:bold">y</span>&nbsp;=&nbsp;</span>
+          <span class="input-val" id="input-val-display"></span>
+        </div>
+        <div class="answer-btns-grid" id="answer-btns"></div>
+      </div>`;
+    buildAnswerButtons();
+  } else {
+    body.innerHTML = `
+      <div class="connect-formula-area">
+        <div class="connect-formula" id="connect-formula"></div>
+      </div>
+      <div class="connect-graph-area" id="connect-graph-area">
+        <canvas id="graph-canvas"></canvas>
+      </div>
+      <div class="connect-actions">
+        <button class="clear-pts-btn" onclick="clearPoints()">点を消す</button>
+      </div>`;
+    // Attach canvas listeners once after DOM insertion
+    setTimeout(() => {
+      const cv = document.getElementById('graph-canvas');
+      if (cv) {
+        cv.addEventListener('click', onCanvasClick);
+        cv.addEventListener('touchend', onCanvasTouch, {passive: false});
+      }
+    }, 0);
+  }
+}
+
+// ========================
+// GRAPH CANVAS
+// ========================
+let graphCanvas, graphCtx, cellSize, originX, originY, canvasSize;
+
+function initCanvas() {
+  graphCanvas = document.getElementById('graph-canvas');
+  graphCtx = graphCanvas.getContext('2d');
+
+  const areaEl = document.getElementById(state.mode === 'answer' ? 'answer-graph-area' : 'connect-graph-area');
+  const rect = areaEl.getBoundingClientRect();
+  const sz = Math.max(160, Math.min(rect.width - 16, rect.height - 16, 360));
+  canvasSize = sz;
+  graphCanvas.width = sz;
+  graphCanvas.height = sz;
+  graphCanvas.style.width = sz + 'px';
+  graphCanvas.style.height = sz + 'px';
+
+  cellSize = sz / 14; // 13 divisions (-6 to +6) with some padding
+  // Actually let's do: canvas covers -7 to +7 virtually, display -6 to +6
+  // grid: 12 cells visible, border cells for line extension
+  cellSize = sz / 13;
+  originX = sz / 2;
+  originY = sz / 2;
+
+}
+
+function toCanvas(gx, gy) {
+  return {
+    cx: originX + gx * cellSize,
+    cy: originY - gy * cellSize
+  };
+}
+
+function toGrid(cx, cy) {
+  return {
+    gx: (cx - originX) / cellSize,
+    gy: -(cy - originY) / cellSize
+  };
+}
+
+function drawGrid(showDots) {
+  const ctx = graphCtx;
+  const sz = canvasSize;
+  ctx.clearRect(0, 0, sz, sz);
+
+  // Background
+  ctx.fillStyle = '#06061a';
+  ctx.fillRect(0, 0, sz, sz);
+
+  // Grid lines (light)
+  ctx.strokeStyle = '#1a2040';
+  ctx.lineWidth = 0.5;
+  for (let g = -6; g <= 6; g++) {
+    const {cx} = toCanvas(g, 0);
+    const {cy} = toCanvas(0, g);
+    // vertical
+    ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx, sz); ctx.stroke();
+    // horizontal
+    ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(sz, cy); ctx.stroke();
+  }
+
+  if (showDots) {
+    // Grid dots
+    ctx.fillStyle = '#2a3560';
+    for (let gx = -6; gx <= 6; gx++) {
+      for (let gy = -6; gy <= 6; gy++) {
+        const {cx, cy} = toCanvas(gx, gy);
+        ctx.beginPath();
+        ctx.arc(cx, cy, 1.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  }
+
+  // Axes
+  ctx.strokeStyle = '#3a4a7a';
+  ctx.lineWidth = 1.5;
+  // x-axis
+  ctx.beginPath();
+  ctx.moveTo(0, originY);
+  ctx.lineTo(sz, originY);
+  ctx.stroke();
+  // y-axis
+  ctx.beginPath();
+  ctx.moveTo(originX, 0);
+  ctx.lineTo(originX, sz);
+  ctx.stroke();
+
+  // Tick marks and labels
+  ctx.fillStyle = '#5a6a9a';
+  ctx.font = `${Math.round(cellSize * 0.55)}px monospace`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+
+  for (let g = -6; g <= 6; g++) {
+    if (g === 0) continue;
+    const {cx} = toCanvas(g, 0);
+    // x tick
+    ctx.strokeStyle = '#3a4a7a';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(cx, originY - 3); ctx.lineTo(cx, originY + 3); ctx.stroke();
+    if (g % 2 === 0 || cellSize > 20) {
+      ctx.fillText(g, cx, originY + 5);
+    }
+  }
+
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'middle';
+  for (let g = -6; g <= 6; g++) {
+    if (g === 0) continue;
+    const {cy} = toCanvas(0, g);
+    ctx.strokeStyle = '#3a4a7a';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(originX - 3, cy); ctx.lineTo(originX + 3, cy); ctx.stroke();
+    if (g % 2 === 0 || cellSize > 20) {
+      ctx.fillText(g, originX - 5, cy);
+    }
+  }
+
+  // Origin label
+  ctx.fillStyle = '#4a5a8a';
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'top';
+  ctx.fillText('O', originX - 4, originY + 4);
+}
+
+function drawLine(aNumer, aDenom, b, color) {
+  const ctx = graphCtx;
+  const slope = aNumer / aDenom;
+
+  // Clip line to canvas
+  // y = slope * x + b  =>  at x = ±7 (beyond canvas)
+  const x1 = -7, y1 = slope * x1 + b;
+  const x2 =  7, y2 = slope * x2 + b;
+
+  const p1 = toCanvas(x1, y1);
+  const p2 = toCanvas(x2, y2);
+
+  ctx.strokeStyle = color || '#00d4ff';
+  ctx.lineWidth = 2.5;
+  ctx.lineCap = 'round';
+  ctx.shadowColor = color || '#00d4ff';
+  ctx.shadowBlur = 6;
+  ctx.beginPath();
+  ctx.moveTo(p1.cx, p1.cy);
+  ctx.lineTo(p2.cx, p2.cy);
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+}
+
+function redrawGraph() {
+  if (!graphCanvas) return;
+  const q = state.currentQuestion;
+  const showDots = !state.isSpecial;
+  drawGrid(showDots);
+  if (state.mode === 'answer') {
+    drawLine(q.aNumer, q.aDenom, q.b, '#00d4ff');
+  } else {
+    // Draw player's line if 2 points
+    drawConnectPoints();
+  }
+}
+
+// ========================
+// ANSWER MODE
+// ========================
+function buildAnswerButtons() {
+  const container = document.getElementById('answer-btns');
+  const buttons = [
+    {label:'1', val:'1'}, {label:'2', val:'2'}, {label:'3', val:'3'},
+    {label:'4', val:'4'}, {label:'5', val:'5'},
+    {label:'消去', val:'clear', cls:'danger'},
+    {label:'+', val:'+', cls:'special'}, {label:'−', val:'-', cls:'special'},
+    {label:'<span class="math-var" style="font-family:\'Times New Roman\',serif;font-style:italic;font-weight:bold">x</span>', val:'x', cls:'special'},
+    {label:'分の', val:'bun', cls:'special'},
+  ];
+  container.innerHTML = buttons.map(b =>
+    `<button class="ans-btn ${b.cls||''}" onclick="ansPress('${b.val}')">${b.label}</button>`
+  ).join('');
+}
+
+// Token types: '1'..'5', '+', '-', 'x', 'bun' (fraction slash)
+// Input sequence builds a formula internally
+// We display it as rendered math
+
+function ansPress(val) {
+  if (val === 'clear') {
+    state.answerInput = [];
+    updateInputDisplay();
+    return;
+  }
+
+  state.answerInput.push(val);
+  updateInputDisplay();
+
+  // Check correctness on every press; if wrong, do nothing (no feedback, no reset)
+  const parsed = parseAnswerInput(state.answerInput);
+  if (parsed !== null) {
+    const q = state.currentQuestion;
+    if (fractionsEqual(parsed.aNumer, parsed.aDenom, q.aNumer, q.aDenom) && parsed.b === q.b) {
+      onCorrect();
+    }
+    // Wrong: silently do nothing — player continues typing or presses 消去
+  }
+}
+
+// Returns {aNumer, aDenom, b} or null if incomplete
+function parseAnswerInput(tokens) {
+  // Grammar:
+  // Expression: [sign] slope_part [sign integer]
+  // slope_part: integer 'x' | integer 'bun' integer 'x' | 'x'
+  // sign: '+' | '-'
+  // b part: sign integer (no 'x' after)
+
+  if (tokens.length === 0) return null;
+
+  let i = 0;
+  const t = tokens;
+  const len = t.length;
+
+  // Helper: is digit token?
+  const isDigit = (tk) => ['1','2','3','4','5'].includes(tk);
+  const digits = (start) => { let s = ''; while (start < len && isDigit(t[start])) { s += t[start]; start++; } return {val: s, end: start}; };
+
+  // Sign
+  let slopeSign = 1;
+  if (t[i] === '-') { slopeSign = -1; i++; }
+  else if (t[i] === '+') { i++; }
+
+  if (i >= len) return null;
+
+  let aNumer = 0, aDenom = 1;
+  let b = 0;
+
+  // Check for fraction: number 'bun' number 'x'
+  // or integer 'x'
+  // or just 'x'
+
+  if (t[i] === 'x') {
+    // slope = sign * 1
+    aNumer = slopeSign * 1; aDenom = 1; i++;
+  } else if (isDigit(t[i])) {
+    const {val: numStr, end: e1} = digits(i);
+    i = e1;
+    const num = parseInt(numStr);
+    if (i < len && t[i] === 'bun') {
+      i++; // consume 'bun'
+      // next should be numerator number then 'x'
+      if (i >= len) return null;
+      const {val: numStr2, end: e2} = digits(i);
+      i = e2;
+      if (numStr2 === '') return null;
+      const numer = parseInt(numStr2);
+      if (i < len && t[i] === 'x') {
+        // fraction: denom=num, numer=numer (keep unreduced — only reduced fractions are accepted)
+        aNumer = slopeSign * numer;
+        aDenom = num;
+        i++;
+      } else return null;
+    } else if (i < len && t[i] === 'x') {
+      aNumer = slopeSign * num; aDenom = 1; i++;
+    } else {
+      return null; // number not followed by x or bun
+    }
+  } else {
+    return null;
+  }
+
+  // Now optional b part: sign integer (no x)
+  if (i >= len) {
+    // b = 0
+    return { aNumer, aDenom, b: 0 };
+  }
+
+  let bSign = 1;
+  if (t[i] === '+') { bSign = 1; i++; }
+  else if (t[i] === '-') { bSign = -1; i++; }
+  else return null; // unexpected token
+
+  if (i >= len) return null;
+  const {val: bStr, end: e3} = digits(i);
+  i = e3;
+  if (bStr === '') return null;
+  b = bSign * parseInt(bStr);
+
+  if (i < len) return null; // extra tokens
+
+  return { aNumer, aDenom, b };
+}
+
+function fractionsEqual(n1, d1, n2, d2) {
+  // Direct comparison — questions are always already reduced,
+  // so unreduced input (e.g. 2/4) correctly fails to match 1/2.
+  return n1 === n2 && d1 === d2;
+}
+
+function updateInputDisplay() {
+  const el = document.getElementById('input-val-display');
+  if (!el) return;
+  el.innerHTML = renderTokens(state.answerInput);
+}
+
+function renderTokens(tokens) {
+  if (tokens.length === 0) return '<span style="color:var(--text-dim)">　</span>';
+
+  // Parse for display
+  let html = '';
+  let i = 0;
+  const t = tokens;
+  const len = t.length;
+
+  while (i < len) {
+    const tk = t[i];
+    if (tk === '+') { html += '<span style="color:var(--text)">+</span>'; i++; }
+    else if (tk === '-') { html += '<span style="color:var(--accent2)">−</span>'; i++; }
+    else if (tk === 'x') { html += '<span class="math-var">x</span>'; i++; }
+    else if (['1','2','3','4','5'].includes(tk)) {
+      // Check if followed by 'bun'
+      // Look ahead: number(s), then bun, then number(s), then x  => fraction display
+      let j = i;
+      let denomStr = '';
+      while (j < len && ['1','2','3','4','5'].includes(t[j])) { denomStr += t[j]; j++; }
+      if (j < len && t[j] === 'bun') {
+        j++;
+        let numerStr = '';
+        while (j < len && ['1','2','3','4','5'].includes(t[j])) { numerStr += t[j]; j++; }
+        if (numerStr) {
+          html += `<span class="math-frac"><span class="numer">${numerStr}</span><span class="denom">${denomStr}</span></span>`;
+        } else {
+          html += `<span>${denomStr}</span><span style="color:var(--accent)">分の</span>`;
+        }
+        i = j;
+      } else {
+        html += `<span>${denomStr}</span>`;
+        i = j;
+      }
+    } else if (tk === 'bun') {
+      html += '<span style="color:var(--accent)">分の</span>'; i++;
+    } else {
+      i++;
+    }
+  }
+  return html;
+}
+
+// ========================
+// CONNECT MODE
+// ========================
+function renderConnectMode() {
+  // Update formula display
+  const formulaEl = document.getElementById('connect-formula');
+  if (formulaEl) {
+    formulaEl.innerHTML = formatFormula(state.currentQuestion);
+  }
+  initCanvas();
+  redrawGraph();
+}
+
+function renderAnswerMode() {
+  updateInputDisplay();
+  initCanvas();
+  redrawGraph();
+}
+
+function formatFormula(q) {
+  const {aNumer, aDenom, b} = q;
+  let html = '<span style="font-family:\'Times New Roman\',serif;font-style:italic;font-weight:bold;color:var(--text)">y</span>&nbsp;=&nbsp;';
+
+  // Slope part
+  if (aDenom === 1) {
+    if (aNumer === 1) html += '<span class="math-var">x</span>';
+    else if (aNumer === -1) html += '−<span class="math-var">x</span>';
+    else html += `${aNumer < 0 ? '−' : ''}${Math.abs(aNumer)}<span class="math-var">x</span>`;
+  } else {
+    const sign = aNumer < 0 ? '−' : '';
+    html += `${sign}<span class="math-frac" style="font-size:1em"><span class="numer">${Math.abs(aNumer)}</span><span class="denom">${aDenom}</span></span><span class="math-var">x</span>`;
+  }
+
+  // b part
+  if (b !== 0) {
+    if (b > 0) html += `&nbsp;+&nbsp;${b}`;
+    else html += `&nbsp;−&nbsp;${Math.abs(b)}`;
+  }
+
+  return html;
+}
+
+function onCanvasClick(e) {
+  e.preventDefault();
+  const rect = graphCanvas.getBoundingClientRect();
+  const px = (e.clientX - rect.left) * (graphCanvas.width / rect.width);
+  const py = (e.clientY - rect.top) * (graphCanvas.height / rect.height);
+  handlePointInput(px, py);
+}
+
+function onCanvasTouch(e) {
+  e.preventDefault();
+  const touch = e.changedTouches[0];
+  const rect = graphCanvas.getBoundingClientRect();
+  const px = (touch.clientX - rect.left) * (graphCanvas.width / rect.width);
+  const py = (touch.clientY - rect.top) * (graphCanvas.height / rect.height);
+  handlePointInput(px, py);
+}
+
+function handlePointInput(px, py) {
+  // Convert to grid
+  const {gx, gy} = toGrid(px, py);
+  // Snap to nearest integer grid point
+  const igx = Math.round(gx);
+  const igy = Math.round(gy);
+
+  // Check within range
+  if (igx < -6 || igx > 6 || igy < -6 || igy > 6) return;
+
+  // For proportion: origin is fixed, player adds 1 point
+  if (state.range === 'proportion') {
+    if (igx === 0 && igy === 0) return; // can't click origin
+    state.connectPoints = [{x:0,y:0}, {x:igx, y:igy}];
+  } else {
+    // Check if point already exists
+    const exists = state.connectPoints.some(p => p.x === igx && p.y === igy);
+    if (exists) return;
+    if (state.connectPoints.length >= 2) {
+      state.connectPoints = [state.connectPoints[state.connectPoints.length-1], {x:igx, y:igy}];
+    } else {
+      state.connectPoints.push({x:igx, y:igy});
+    }
+  }
+
+  redrawGraph();
+
+  // Check if we have enough points
+  const needed = state.range === 'proportion' ? 2 : 2;
+  if (state.connectPoints.length === needed) {
+    checkConnectAnswer();
+  }
+}
+
+function drawConnectPoints() {
+  const ctx = graphCtx;
+  const pts = state.connectPoints;
+
+  if (pts.length >= 2) {
+    // Draw line through these 2 points
+    const p1 = pts[0], p2 = pts[1];
+    if (p1.x === p2.x) {
+      // Vertical line — draw directly
+      const c1 = toCanvas(p1.x, -7);
+      const c2 = toCanvas(p2.x, 7);
+      ctx.strokeStyle = '#ff6b35';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.moveTo(c1.cx, c1.cy); ctx.lineTo(c2.cx, c2.cy); ctx.stroke();
+    } else {
+      const sNum = p2.y - p1.y; // integer
+      const sDen = p2.x - p1.x; // integer
+      const b = p1.y - (sNum / sDen) * p1.x;
+      drawLine(sNum, sDen, b, '#ff6b35');
+    }
+  }
+
+  // Draw points
+  pts.forEach(p => {
+    const {cx, cy} = toCanvas(p.x, p.y);
+    ctx.fillStyle = '#ffd700';
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  });
+}
+
+function checkConnectAnswer() {
+  const pts = state.connectPoints;
+  if (pts.length < 2) return;
+
+  const p1 = pts[0], p2 = pts[1];
+  if (p1.x === p2.x) { onWrong(); state.connectPoints = []; redrawGraph(); return; }
+
+  const slopeNum = p2.y - p1.y;
+  const slopeDen = p2.x - p1.x;
+  const g = gcd(Math.abs(slopeNum), Math.abs(slopeDen));
+  let rn = slopeNum / g, rd = slopeDen / g;
+  if (rd < 0) { rn = -rn; rd = -rd; }
+
+  // Compute b: b = y - slope*x = p1.y - (rn/rd)*p1.x
+  // b = (p1.y * rd - rn * p1.x) / rd
+  const bNum = p1.y * rd - rn * p1.x;
+  if (bNum % rd !== 0) { onWrong(); state.connectPoints = []; redrawGraph(); return; }
+  const b = bNum / rd;
+
+  const q = state.currentQuestion;
+  const qg = gcd(Math.abs(q.aNumer), q.aDenom);
+  const qrn = q.aNumer / qg, qrd = q.aDenom / qg;
+
+  if (rn === qrn && rd === qrd && b === q.b) {
+    onCorrect();
+  }
+  // Wrong: do nothing — line stays visible, player can click new points or press 点を消す
+}
+
+function clearPoints() {
+  state.connectPoints = state.range === 'proportion' ? [{x:0,y:0}] : [];
+  redrawGraph();
+}
+
+// ========================
+// WINDOW RESIZE
+// ========================
+window.addEventListener('resize', () => {
+  if (document.getElementById('game-screen').classList.contains('active')) {
+    const canvas = document.getElementById('graph-canvas');
+    if (canvas) {
+      initCanvas();
+      redrawGraph();
+    }
+  }
+});
+
+// ========================
+// SOUND (Web Audio API)
+// ========================
+let _audioCtx = null;
+
+function getAudioCtx() {
+  if (!_audioCtx) {
+    _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  // Resume if suspended (browser autoplay policy)
+  if (_audioCtx.state === 'suspended') _audioCtx.resume();
+  return _audioCtx;
+}
+
+function playTone(ctx, freq, dur, type, vol, delay, attack, decay) {
+  attack = attack || 0.005;
+  decay  = decay  || dur;
+  const osc  = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.type = type || 'sine';
+  osc.frequency.setValueAtTime(freq, ctx.currentTime + delay);
+  gain.gain.setValueAtTime(0.0001, ctx.currentTime + delay);
+  gain.gain.linearRampToValueAtTime(vol, ctx.currentTime + delay + attack);
+  gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + delay + decay);
+  osc.start(ctx.currentTime + delay);
+  osc.stop(ctx.currentTime + delay + decay + 0.02);
+}
+
+function playNoise(ctx, dur, vol, delay) {
+  const buf = ctx.createBuffer(1, ctx.sampleRate * dur, ctx.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1);
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  const filt = ctx.createBiquadFilter();
+  filt.type = 'bandpass'; filt.frequency.value = 2000; filt.Q.value = 0.5;
+  const gain = ctx.createGain();
+  src.connect(filt); filt.connect(gain); gain.connect(ctx.destination);
+  gain.gain.setValueAtTime(vol, ctx.currentTime + delay);
+  gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + delay + dur);
+  src.start(ctx.currentTime + delay);
+  src.stop(ctx.currentTime + delay + dur + 0.01);
+}
+
+function playSound(type) {
+  try {
+    const ctx = getAudioCtx();
+    switch (type) {
+      case 'btn':
+        // Short click: filtered noise + high sine
+        playNoise(ctx, 0.04, 0.12, 0);
+        playTone(ctx, 1200, 0.05, 'sine', 0.08, 0);
+        break;
+
+      case 'tick':
+        // Countdown tick: two-tone "tik"
+        playTone(ctx, 660, 0.08, 'square', 0.18, 0, 0.003, 0.08);
+        playTone(ctx, 440, 0.06, 'sine',   0.10, 0.03);
+        break;
+
+      case 'start':
+        // START!: bright ascending arpeggio
+        [523, 659, 784, 1047].forEach((f, i) =>
+          playTone(ctx, f, 0.18, 'sine', 0.22, i * 0.09, 0.01, 0.18)
+        );
+        playTone(ctx, 1047, 0.35, 'sine', 0.18, 0.37, 0.01, 0.35);
+        break;
+
+      case 'correct': {
+        // 正解: bright pop + rising ping
+        playNoise(ctx, 0.06, 0.12, 0);
+        const notes = [880, 1108, 1320];
+        notes.forEach((f, i) =>
+          playTone(ctx, f, 0.2, 'sine', 0.2, i * 0.05, 0.005, 0.2)
+        );
+        break;
+      }
+
+      case 'result':
+        // 結果画面: rising jingle
+        [523, 659, 784, 880, 1047, 1319].forEach((f, i) =>
+          playTone(ctx, f, 0.22, 'sine', 0.18, i * 0.07, 0.01, 0.22)
+        );
+        // Final chord
+        [1047, 1319, 1568].forEach((f, i) =>
+          playTone(ctx, f, 0.5, 'sine', 0.15, 0.44 + i * 0.01, 0.02, 0.5)
+        );
+        break;
+    }
+  } catch (e) { /* AudioContext not available */ }
+}
+
+// Global button click sound (captures all button/tap interactions)
+document.addEventListener('pointerdown', function(e) {
+  const btn = e.target.closest('button, .mode-btn, .toggle-btn');
+  if (btn) playSound('btn');
+}, { capture: true });
+</script>
+</body>
+</html>
