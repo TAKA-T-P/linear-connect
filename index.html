@@ -692,6 +692,7 @@ canvas {
       <button class="color-swatch" data-color="#007700" style="background:#007700" onclick="selectGraphColor('#007700')" title="緑"></button>
       <button class="color-swatch" data-color="#7700cc" style="background:#7700cc" onclick="selectGraphColor('#7700cc')" title="紫"></button>
       <button class="color-swatch" data-color="#cc6600" style="background:#cc6600" onclick="selectGraphColor('#cc6600')" title="橙"></button>
+      <button class="color-swatch" data-color="#111111" style="background:#111111" onclick="selectGraphColor('#111111')" title="黒"></button>
     </div>
   </div>
 
@@ -1103,8 +1104,10 @@ function generateSpecialQuestion() {
     const b = yInt;
     // Check fn != 0
     if (fn === 0) continue;
-    // Check |fn|<=5 and |fd|<=5
-    if (Math.abs(fn) > 5 || Math.abs(fd) > 5) continue;
+    // Check |fn|<=4 and fd<=4 (consistent with generateQuestion range)
+    if (Math.abs(fn) > 4 || fd > 4) continue;
+    // Exclude 3/4 and 4/3 (and their negatives)
+    if ((Math.abs(fn) === 3 && fd === 4) || (Math.abs(fn) === 4 && fd === 3)) continue;
     // Check gcd(|fn|,fd)==1
     if (gcd(Math.abs(fn), fd) !== 1) continue;
     return { aNumer: fn, aDenom: fd, b, xIntercept: xInt, yIntercept: yInt };
