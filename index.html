@@ -305,9 +305,9 @@ html, body {
 }
 .small-btn {
   padding: 5px 10px;
-  border: 1px solid var(--border);
-  background: var(--panel);
-  color: var(--text-dim);
+  border: 2px solid #4a5a7a;
+  background: #1a2a44;
+  color: #c0cce0;
   border-radius: 7px;
   font-size: 11px;
   cursor: pointer;
@@ -389,7 +389,7 @@ html, body {
 }
 .ans-btn {
   padding: 10px 4px;
-  border: 1px solid var(--border);
+  border: 2px solid var(--border);
   background: #0d1a2e;
   color: var(--text);
   border-radius: 10px;
@@ -464,7 +464,7 @@ html, body {
 }
 .clear-pts-btn {
   padding: 10px 28px;
-  border: 1px solid var(--accent2);
+  border: 2px solid var(--accent2);
   background: rgba(255,107,53,0.1);
   color: var(--accent2);
   border-radius: 10px;
@@ -838,8 +838,8 @@ canvas {
   <div class="title-section">
     <label>グラフの色</label>
     <div class="color-swatches" id="color-swatches">
-      <button class="color-swatch active" data-color="#111111" style="background:#111111" onclick="selectGraphColor('#111111')" title="黒"></button>
-      <button class="color-swatch" data-color="#0044cc" style="background:#0044cc" onclick="selectGraphColor('#0044cc')" title="青"></button>
+      <button class="color-swatch" data-color="#111111" style="background:#111111" onclick="selectGraphColor('#111111')" title="黒"></button>
+      <button class="color-swatch active" data-color="#0044cc" style="background:#0044cc" onclick="selectGraphColor('#0044cc')" title="青"></button>
       <button class="color-swatch" data-color="#cc0000" style="background:#cc0000" onclick="selectGraphColor('#cc0000')" title="赤"></button>
       <button class="color-swatch" data-color="#007700" style="background:#007700" onclick="selectGraphColor('#007700')" title="緑"></button>
       <button class="color-swatch" data-color="#7700cc" style="background:#7700cc" onclick="selectGraphColor('#7700cc')" title="紫"></button>
@@ -1056,7 +1056,7 @@ const state = {
   mode: 'answer',       // 'answer' | 'connect'
   range: 'linear',     // 'linear' | 'proportion'
   timeLimit: 60,
-  graphLineColor: '#111111', // user-selected graph line color
+  graphLineColor: '#0044cc', // user-selected graph line color
 
   // runtime
   score: 0,
