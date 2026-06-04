@@ -416,12 +416,14 @@ html, body {
   color: #a8c8ff;
   border-color: rgba(168,200,255,0.45);
   background: #0c1830;
-  font-size: 14px;
-  padding: 6px 2px;
+  font-size: 17px;
+  padding: 3px 2px;
+  min-height: 36px;
 }
 .ans-btn.frac-btn .math-frac .numer,
-.ans-btn.frac-btn .math-frac .denom { font-size: 0.88em; }
+.ans-btn.frac-btn .math-frac .denom { font-size: 0.92em; }
 .ans-btn.x-wide { grid-column: span 2; font-size: 20px; }
+.ans-btn.operator-btn { font-size: 19px; font-weight: 900; }
 
 /* ===== CONNECT MODE LAYOUT ===== */
 .connect-formula-area {
@@ -635,13 +637,6 @@ canvas {
   pointer-events: none;
   z-index: 300;
   opacity: 0;
-}
-#flash-overlay.flash-active {
-  animation: screenFlash 0.6s ease-out forwards;
-}
-@keyframes screenFlash {
-  0%   { opacity: 0.18; }
-  100% { opacity: 0; }
 }
 
 /* Animations */
@@ -973,6 +968,10 @@ function stopTimer() {
 function showTimeoutAndEnd() {
   stopTimer();
   stopGauge();
+  // Count the unanswered last question's elapsed time to prevent "quick-answer-then-wait" exploit
+  const lastElapsed = (performance.now() - state.questionStartTime) / 1000;
+  state.totalAnswerTime += lastElapsed;
+  state.correctCount += 1;
   const fb = document.getElementById('feedback-overlay');
   const ft = document.getElementById('feedback-text');
   ft.className = 'feedback-timeout';
@@ -1005,7 +1004,8 @@ function startGauge() {
 
   state.gaugeStartTime = performance.now();
   const speed = getGaugeSpeed();
-  const duration = 10000 / speed; // ms
+  const baseDurationMs = (getTimeB() * 2.6 + 1) * 1000;
+  const duration = baseDurationMs / speed; // ms
 
   state.gaugeInterval = setInterval(() => {
     if (state.isPaused) return;
@@ -1175,6 +1175,7 @@ function onCorrect() {
   } else {
     setTimeout(() => {
       hideFeedback();
+      clearScreenFlash();
       state.isPaused = false;
       resetGauge();
       nextQuestion();
@@ -1184,10 +1185,19 @@ function onCorrect() {
 
 function triggerScreenFlash() {
   const el = document.getElementById('flash-overlay');
-  el.classList.remove('flash-active');
-  void el.offsetWidth; // reflow to restart animation
-  el.classList.add('flash-active');
-  setTimeout(() => el.classList.remove('flash-active'), 450);
+  // Instant show
+  el.style.transition = 'none';
+  el.style.opacity = '0.18';
+  void el.offsetWidth; // reflow
+  // Fade out over 0.6s
+  el.style.transition = 'opacity 0.6s ease-out';
+  el.style.opacity = '0';
+}
+
+function clearScreenFlash() {
+  const el = document.getElementById('flash-overlay');
+  el.style.transition = 'none';
+  el.style.opacity = '0';
 }
 
 function showCorrectFeedback(comboCount) {
@@ -1242,17 +1252,21 @@ function showResult() {
 const RANKS = ['皆伝','十段','九段','八段','七段','六段','五段','四段','三段','二段','初段',
                '1級','2級','3級','4級','5級','6級','7級','8級','9級','10級'];
 
+function getTimeB() {
+  if (state.mode === 'answer'  && state.range === 'linear')     return 3.8;
+  if (state.mode === 'answer'  && state.range === 'proportion') return 2.4;
+  if (state.mode === 'connect' && state.range === 'linear')     return 2.6;
+  if (state.mode === 'connect' && state.range === 'proportion') return 1.5;
+  return 3.8;
+}
+
 function calcRank(avgTime) {
   if (avgTime === null) return '10級';
-  if (state.mode === 'answer') {
-    if (avgTime < 4.0) return '皆伝';
-    const steps = Math.floor((avgTime - 4.0) / 0.4);
-    return RANKS[Math.min(1 + steps, 20)];
-  } else {
-    if (avgTime < 3.0) return '皆伝';
-    const steps = Math.floor((avgTime - 3.0) / 0.35);
-    return RANKS[Math.min(1 + steps, 20)];
-  }
+  const timeB = getTimeB();
+  // coefficient = ceil( sqrt(timeA/timeB * 400) - 20 )
+  const coefficient = Math.ceil(Math.sqrt(avgTime / timeB * 400) - 20);
+  if (coefficient <= 0) return '皆伝';
+  return RANKS[Math.min(coefficient, 20)];
 }
 
 // ========================
@@ -1476,11 +1490,11 @@ function buildAnswerButtons() {
     {label:fracLabel(1,2), val:'1/2', cls:'frac-btn'},
     {label:fracLabel(1,3), val:'1/3', cls:'frac-btn'},
     {label:fracLabel(1,4), val:'1/4', cls:'frac-btn'},
-    {label:'←', val:'back', cls:'edit'},
+    {label:'←', val:'back', cls:'edit operator-btn'},
     {label:'1', val:'1'}, {label:'2', val:'2'}, {label:'3', val:'3'}, {label:'4', val:'4'},
     {label:'消去', val:'clear', cls:'edit'},
-    {label:'+', val:'+', cls:'special'},
-    {label:'−', val:'-', cls:'special'},
+    {label:'+', val:'+', cls:'special operator-btn'},
+    {label:'−', val:'-', cls:'special operator-btn'},
     {label:'<span class="math-var" style="font-family:\'Times New Roman\',serif;font-style:italic;font-weight:bold">x</span>', val:'x', cls:'special x-wide'},
   ];
   container.innerHTML = buttons.map(b =>
