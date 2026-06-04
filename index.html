@@ -496,6 +496,15 @@ canvas {
   from { transform: translate(-50%, -50%) scale(0.7); opacity: 0; }
   to   { transform: translate(-50%, -50%) scale(1);   opacity: 1; }
 }
+.feedback-milestone {
+  font-size: clamp(26px, 7vw, 36px);
+  font-weight: 900;
+  color: #cc6600;
+  -webkit-text-stroke: 1px white;
+  paint-order: stroke fill;
+  letter-spacing: 2px;
+  margin-bottom: 2px;
+}
 .feedback-text {
   font-size: clamp(36px, 10vw, 52px);
   font-weight: 900;
@@ -782,6 +791,7 @@ canvas {
 
 <!-- Feedback overlay -->
 <div class="feedback-overlay" id="feedback-overlay">
+  <div class="feedback-milestone" id="feedback-milestone"></div>
   <div class="feedback-text" id="feedback-text"></div>
   <div class="feedback-combo" id="feedback-combo"></div>
 </div>
@@ -1203,9 +1213,18 @@ function clearScreenFlash() {
   el.style.opacity = '0';
 }
 
+function getMilestoneText(combo) {
+  if (combo % 5 !== 0) return '';
+  if (combo >= 20) return 'Incredible !';
+  if (combo >= 15) return 'Marvelous !';
+  if (combo >= 10) return 'Excellent !';
+  return 'Great !';
+}
+
 function showCorrectFeedback(comboCount) {
   playSound('correct');
   const fb = document.getElementById('feedback-overlay');
+  document.getElementById('feedback-milestone').textContent = getMilestoneText(comboCount);
   document.getElementById('feedback-text').textContent = '正解！';
   document.getElementById('feedback-combo').textContent = comboCount + ' Combo!!';
   fb.className = 'feedback-overlay visible';
