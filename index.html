@@ -497,13 +497,14 @@ canvas {
   to   { transform: translate(-50%, -50%) scale(1);   opacity: 1; }
 }
 .feedback-milestone {
-  font-size: clamp(26px, 7vw, 36px);
+  font-size: clamp(24px, 6.5vw, 34px);
   font-weight: 900;
   color: #cc6600;
   -webkit-text-stroke: 1px white;
   paint-order: stroke fill;
-  letter-spacing: 2px;
+  letter-spacing: 1px;
   margin-bottom: 2px;
+  white-space: nowrap;
 }
 .feedback-text {
   font-size: clamp(36px, 10vw, 52px);
@@ -636,6 +637,31 @@ canvas {
   font-family: 'Times New Roman', serif;
   font-style: italic;
   font-weight: bold;
+}
+
+/* Warning overlay (connect mode reckless tapping) */
+.tap-warning-overlay {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  pointer-events: none;
+  z-index: 150;
+  display: none;
+  white-space: nowrap;
+}
+.tap-warning-overlay.visible {
+  display: block;
+  animation: feedbackPop 0.18s ease-out;
+}
+.tap-warning-line {
+  font-size: clamp(26px, 7vw, 36px);
+  font-weight: 900;
+  color: #cc3300;
+  -webkit-text-stroke: 1px white;
+  paint-order: stroke fill;
+  line-height: 1.2;
 }
 
 /* Screen flash for 5-combo milestones */
@@ -909,16 +935,16 @@ canvas {
       <div class="stat-value hi" id="result-hi">0</div>
     </div>
     <div class="stat-card">
+      <div class="stat-label">平均正解時間</div>
+      <div class="stat-value" id="result-avgtime">--</div>
+    </div>
+    <div class="stat-card">
       <div class="stat-label">正解数</div>
       <div class="stat-value" id="result-correct">0</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">最大コンボ</div>
       <div class="stat-value" id="result-maxcombo">0</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">平均正解時間</div>
-      <div class="stat-value" id="result-avgtime">--</div>
     </div>
   </div>
 
@@ -1038,6 +1064,12 @@ canvas {
   </div>
 </div>
 
+<!-- Tap warning overlay (connect mode) -->
+<div class="tap-warning-overlay" id="tap-warning-overlay">
+  <div class="tap-warning-line">考えてから</div>
+  <div class="tap-warning-line">タップしよう！</div>
+</div>
+
 <!-- Screen flash overlay (5-combo milestone) -->
 <div id="flash-overlay"></div>
 
@@ -1083,6 +1115,8 @@ const state = {
 
   // connect mode
   connectPoints: [],   // [{x, y}, ...]
+  wrongTapCount: 0,    // wrong evaluations on current question
+  rankPenalty: 0,      // accumulated rank penalty from tap warnings
 };
 
 // ========================
@@ -1178,6 +1212,8 @@ function initGame() {
   state.connectPoints = [];
   state.isSpecial = false;
   state.lastComboAtSpecialStart = 0;
+  state.wrongTapCount = 0;
+  state.rankPenalty = 0;
 
   updateHUD();
   buildGameBody();
@@ -1403,6 +1439,7 @@ function nextQuestion() {
     state.answerInput = [];
     renderAnswerMode();
   } else {
+    state.wrongTapCount = 0;
     state.connectPoints = [];
     if (state.range === 'proportion') {
       state.connectPoints = [{x: 0, y: 0}]; // fixed origin
@@ -1448,6 +1485,16 @@ function onCorrect() {
   }
 }
 
+function showTapWarning() {
+  state.rankPenalty++;
+  state.wrongTapCount = 0;
+  const el = document.getElementById('tap-warning-overlay');
+  el.classList.remove('visible');
+  void el.offsetWidth;
+  el.classList.add('visible');
+  setTimeout(() => el.classList.remove('visible'), 1000);
+}
+
 function triggerScreenFlash() {
   const el = document.getElementById('flash-overlay');
   // Instant show
@@ -1491,6 +1538,7 @@ function hideFeedback() {
 // ========================
 function showResult() {
   hideFeedback();
+  document.getElementById('tap-warning-overlay').classList.remove('visible');
   stopTimer();
   stopGauge();
 
@@ -1498,7 +1546,8 @@ function showResult() {
     ? (state.totalAnswerTime / state.correctCount).toFixed(2)
     : '--';
 
-  const rank = calcRank(state.correctCount > 0 ? parseFloat(avgTime) : null);
+  const baseRank = calcRank(state.correctCount > 0 ? parseFloat(avgTime) : null);
+  const rank = state.timeLimit === 180 ? baseRank + '＋' : baseRank;
 
   const modeLabel = {'answer':'アンサー','connect':'コネクト'}[state.mode];
   const rangeLabel = {'linear':'一次関数','proportion':'比例'}[state.range];
@@ -1528,8 +1577,8 @@ const RANKS = ['皆伝','十段','九段','八段','七段','六段','五段','�
 
 function getTimeB() {
   if (state.mode === 'answer'  && state.range === 'linear')     return 3.8;
-  if (state.mode === 'answer'  && state.range === 'proportion') return 2.4;
-  if (state.mode === 'connect' && state.range === 'linear')     return 2.6;
+  if (state.mode === 'answer'  && state.range === 'proportion') return 2.5;
+  if (state.mode === 'connect' && state.range === 'linear')     return 2.5;
   if (state.mode === 'connect' && state.range === 'proportion') return 1.5;
   return 3.8;
 }
@@ -1537,8 +1586,9 @@ function getTimeB() {
 function calcRank(avgTime) {
   if (avgTime === null) return '10級';
   const timeB = getTimeB();
-  // coefficient = ceil( sqrt(timeA/timeB * 400) - 20 )
-  const coefficient = Math.ceil(Math.sqrt(avgTime / timeB * 400) - 20);
+  // coefficient = ceil( sqrt(timeA/timeB * 400) - 20 ) + rank penalty
+  const base = Math.ceil(Math.sqrt(avgTime / timeB * 400) - 20);
+  const coefficient = base + state.rankPenalty;
   if (coefficient <= 0) return '皆伝';
   return RANKS[Math.min(coefficient, 20)];
 }
@@ -2058,8 +2108,11 @@ function checkConnectAnswer() {
 
   if (rn === qrn && rd === qrd && b === q.b) {
     onCorrect();
+  } else {
+    // Wrong: count and warn if reckless tapping
+    state.wrongTapCount++;
+    if (state.wrongTapCount >= 5) showTapWarning();
   }
-  // Wrong: do nothing — line stays visible, player can click new points or press 点を消す
 }
 
 function clearPoints() {
