@@ -671,6 +671,7 @@ canvas {
   background: #ffe066;
   pointer-events: none;
   z-index: 300;
+  display: none;
   opacity: 0;
 }
 
@@ -1497,11 +1498,10 @@ function showTapWarning() {
 
 function triggerScreenFlash() {
   const el = document.getElementById('flash-overlay');
-  // Instant show
+  el.style.display = 'block';
   el.style.transition = 'none';
   el.style.opacity = '0.18';
   void el.offsetWidth; // reflow
-  // Fade out over 0.6s
   el.style.transition = 'opacity 0.6s ease-out';
   el.style.opacity = '0';
 }
@@ -1510,6 +1510,7 @@ function clearScreenFlash() {
   const el = document.getElementById('flash-overlay');
   el.style.transition = 'none';
   el.style.opacity = '0';
+  el.style.display = 'none';
 }
 
 function getMilestoneText(combo) {
