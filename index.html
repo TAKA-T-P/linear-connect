@@ -48,11 +48,26 @@ html, body {
 
 /* ===== TITLE SCREEN ===== */
 #title-screen {
-  background: radial-gradient(ellipse at center, #0d1040 0%, #050510 100%);
+  background: radial-gradient(ellipse at center, #181a60 0%, #0c0c22 100%);
   justify-content: flex-start;
   padding-top: 32px;
   overflow-y: auto;
+  position: relative;
 }
+.sound-toggle-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text-dim);
+  border-radius: 8px;
+  font-size: 11px;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+}
+.sound-toggle-btn.off { color: #555; border-color: #333; }
 
 .title-logo {
   text-align: center;
@@ -142,6 +157,28 @@ html, body {
   color: #fff;
 }
 
+/* Graph color swatches */
+.color-swatches {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+.color-swatch {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.15s;
+  outline: none;
+}
+.color-swatch.active {
+  border-color: #ffffff;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.4);
+  transform: scale(1.18);
+}
+.color-swatch:active { transform: scale(0.9); }
+
 /* Start button */
 .start-btn {
   width: 100%;
@@ -171,7 +208,7 @@ html, body {
 
 /* ===== COUNTDOWN SCREEN ===== */
 #countdown-screen {
-  background: radial-gradient(ellipse at center, #0d1040 0%, #050510 100%);
+  background: radial-gradient(ellipse at center, #181a60 0%, #0c0c22 100%);
 }
 .countdown-mode-label {
   font-size: 16px;
@@ -347,11 +384,11 @@ html, body {
 .answer-btns-grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  grid-template-rows: repeat(2, 1fr);
-  gap: 6px;
+  grid-template-rows: repeat(3, auto);
+  gap: 5px;
 }
 .ans-btn {
-  padding: 12px 4px;
+  padding: 10px 4px;
   border: 1px solid var(--border);
   background: #0d1a2e;
   color: var(--text);
@@ -362,10 +399,29 @@ html, body {
   transition: background 0.1s, transform 0.1s;
   font-family: inherit;
   touch-action: manipulation;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .ans-btn:active { background: var(--accent3); transform: scale(0.95); }
 .ans-btn.special { color: var(--accent2); border-color: rgba(255,107,53,0.4); }
-.ans-btn.danger { color: var(--wrong); border-color: rgba(255,68,68,0.4); }
+.ans-btn.edit {
+  color: #7090b8;
+  border-color: rgba(112,144,184,0.5);
+  background: #0b1628;
+}
+.ans-btn.edit:active { background: rgba(112,144,184,0.2); transform: scale(0.95); }
+.ans-btn.frac-btn {
+  color: #a8c8ff;
+  border-color: rgba(168,200,255,0.45);
+  background: #0c1830;
+  font-size: 14px;
+  padding: 6px 2px;
+}
+.ans-btn.frac-btn .math-frac .numer,
+.ans-btn.frac-btn .math-frac .denom { font-size: 0.88em; }
+.ans-btn.x-wide { grid-column: span 2; font-size: 20px; }
 
 /* ===== CONNECT MODE LAYOUT ===== */
 .connect-formula-area {
@@ -441,15 +497,17 @@ canvas {
 .feedback-text {
   font-size: clamp(36px, 10vw, 52px);
   font-weight: 900;
-  color: var(--correct);
-  text-shadow: 0 0 20px rgba(0,255,136,0.8), 0 2px 8px rgba(0,0,0,0.9);
+  color: #1144dd;
+  -webkit-text-stroke: 1px white;
+  paint-order: stroke fill;
   line-height: 1.1;
 }
 .feedback-combo {
   font-size: clamp(22px, 6vw, 32px);
   font-weight: 900;
-  color: var(--gold);
-  text-shadow: 0 0 16px rgba(255,215,0,0.8), 0 2px 8px rgba(0,0,0,0.9);
+  color: #0033aa;
+  -webkit-text-stroke: 1px white;
+  paint-order: stroke fill;
   margin-top: 4px;
   letter-spacing: 1px;
 }
@@ -462,7 +520,7 @@ canvas {
 
 /* ===== RESULT SCREEN ===== */
 #result-screen {
-  background: radial-gradient(ellipse at center, #0d1040 0%, #050510 100%);
+  background: radial-gradient(ellipse at center, #181a60 0%, #0c0c22 100%);
   justify-content: flex-start;
   padding-top: 24px;
   overflow-y: auto;
@@ -472,7 +530,13 @@ canvas {
   font-size: 13px;
   letter-spacing: 4px;
   color: var(--accent);
-  margin-bottom: 16px;
+  margin-bottom: 6px;
+}
+.result-mode-info {
+  font-size: 12px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  margin-bottom: 14px;
 }
 
 .rank-display {
@@ -563,6 +627,23 @@ canvas {
   font-weight: bold;
 }
 
+/* Screen flash for 5-combo milestones */
+#flash-overlay {
+  position: fixed;
+  inset: 0;
+  background: #ffe066;
+  pointer-events: none;
+  z-index: 300;
+  opacity: 0;
+}
+#flash-overlay.flash-active {
+  animation: screenFlash 0.6s ease-out forwards;
+}
+@keyframes screenFlash {
+  0%   { opacity: 0.18; }
+  100% { opacity: 0; }
+}
+
 /* Animations */
 @keyframes countPop {
   0% { transform: scale(1.5); opacity: 0; }
@@ -578,6 +659,7 @@ canvas {
 
 <!-- TITLE SCREEN -->
 <div id="title-screen" class="screen active">
+  <button class="sound-toggle-btn" id="sound-toggle-btn" onclick="toggleSound()">♪ ON</button>
   <div class="title-logo">
     <div class="app-name">リニア×コネクト！</div>
     <div class="subtitle">LINEAR FUNCTION TRAINING</div>
@@ -604,6 +686,17 @@ canvas {
     <div class="toggle-group">
       <button class="toggle-btn active" onclick="selectTime(60)">1分</button>
       <button class="toggle-btn" onclick="selectTime(180)">3分</button>
+    </div>
+  </div>
+
+  <div class="title-section">
+    <label>グラフの色</label>
+    <div class="color-swatches" id="color-swatches">
+      <button class="color-swatch active" data-color="#0044cc" style="background:#0044cc" onclick="selectGraphColor('#0044cc')" title="青"></button>
+      <button class="color-swatch" data-color="#cc0000" style="background:#cc0000" onclick="selectGraphColor('#cc0000')" title="赤"></button>
+      <button class="color-swatch" data-color="#007700" style="background:#007700" onclick="selectGraphColor('#007700')" title="緑"></button>
+      <button class="color-swatch" data-color="#7700cc" style="background:#7700cc" onclick="selectGraphColor('#7700cc')" title="紫"></button>
+      <button class="color-swatch" data-color="#cc6600" style="background:#cc6600" onclick="selectGraphColor('#cc6600')" title="橙"></button>
     </div>
   </div>
 
@@ -652,6 +745,7 @@ canvas {
 <!-- RESULT SCREEN -->
 <div id="result-screen" class="screen">
   <div class="result-title">RESULT</div>
+  <div class="result-mode-info" id="result-mode-info"></div>
 
   <div class="rank-display">
     <div class="rank-label">段位</div>
@@ -687,6 +781,9 @@ canvas {
   </div>
 </div>
 
+<!-- Screen flash overlay (5-combo milestone) -->
+<div id="flash-overlay"></div>
+
 <!-- Feedback overlay -->
 <div class="feedback-overlay" id="feedback-overlay">
   <div class="feedback-text" id="feedback-text"></div>
@@ -701,6 +798,7 @@ const state = {
   mode: 'answer',       // 'answer' | 'connect'
   range: 'linear',     // 'linear' | 'proportion'
   timeLimit: 60,
+  graphLineColor: '#0044cc', // user-selected graph line color
 
   // runtime
   score: 0,
@@ -732,6 +830,13 @@ const state = {
 // ========================
 // TITLE SCREEN
 // ========================
+function selectGraphColor(color) {
+  state.graphLineColor = color;
+  document.querySelectorAll('.color-swatch').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.color === color);
+  });
+}
+
 function selectMode(mode) {
   state.mode = mode;
   document.querySelectorAll('.mode-btn').forEach((b, i) => {
@@ -846,7 +951,6 @@ function updateHUD() {
 function startTimer() {
   if (state.timerInterval) clearInterval(state.timerInterval);
   state.timerInterval = setInterval(() => {
-    if (state.isPaused) return;
     if (state.timerRemaining > 0) {
       state.timerRemaining--;
       updateHUD();
@@ -896,8 +1000,8 @@ function startGauge() {
   state.gaugeValue = 1.0;
   document.getElementById('combo-gauge').style.width = '100%';
 
-  // At combo=1 the gauge stays full — no decrease until combo≥2
-  if (state.combo <= 1) return;
+  // Gauge stays full only before first correct answer (combo=0)
+  if (state.combo <= 0) return;
 
   state.gaugeStartTime = performance.now();
   const speed = getGaugeSpeed();
@@ -949,7 +1053,8 @@ function generateQuestion() {
   const fracSlopes = [];
   for (let num = 1; num <= 4; num++) {
     for (let den = 2; den <= 4; den++) {
-      if (gcd(num, den) === 1) {
+      // Exclude 3/4 and 4/3 (and their negatives)
+      if (gcd(num, den) === 1 && !((num === 3 && den === 4) || (num === 4 && den === 3))) {
         fracSlopes.push({n: num, d: den});
         fracSlopes.push({n: -num, d: den});
       }
@@ -968,7 +1073,7 @@ function generateQuestion() {
 
   let b = 0;
   if (state.range === 'linear') {
-    b = Math.floor(Math.random() * 11) - 5; // -5 to 5
+    b = Math.floor(Math.random() * 9) - 4; // -4 to 4
   }
   // proportion: b=0 always
 
@@ -982,8 +1087,8 @@ function generateSpecialQuestion() {
   let attempts = 0;
   while (attempts < 200) {
     attempts++;
-    const xInt = (Math.floor(Math.random() * 5) + 1) * (Math.random() < 0.5 ? 1 : -1); // ±1..5
-    const yInt = (Math.floor(Math.random() * 5) + 1) * (Math.random() < 0.5 ? 1 : -1);
+    const xInt = (Math.floor(Math.random() * 4) + 1) * (Math.random() < 0.5 ? 1 : -1); // ±1..4
+    const yInt = (Math.floor(Math.random() * 4) + 1) * (Math.random() < 0.5 ? 1 : -1);
     // slope = (yInt - 0) / (0 - xInt) = -yInt/xInt
     const aNumer = -yInt;
     const aDenom = xInt;
@@ -1051,11 +1156,15 @@ function onCorrect() {
   state.combo++;
   if (state.combo > state.maxCombo) state.maxCombo = state.combo;
 
-  const points = 1000 + 100 * state.combo;
+  const basePoints = 1000 + 100 * state.combo;
+  const points = (state.range === 'linear') ? basePoints * 2 : basePoints;
   state.score += points;
   updateHUD();
 
   if (state.isSpecial) state.isSpecial = false;
+
+  // Flash effect on 5-combo milestones
+  if (state.combo % 5 === 0) triggerScreenFlash();
 
   // Pause timer and gauge while feedback is shown
   state.isPaused = true;
@@ -1071,6 +1180,14 @@ function onCorrect() {
       nextQuestion();
     }, 800);
   }
+}
+
+function triggerScreenFlash() {
+  const el = document.getElementById('flash-overlay');
+  el.classList.remove('flash-active');
+  void el.offsetWidth; // reflow to restart animation
+  el.classList.add('flash-active');
+  setTimeout(() => el.classList.remove('flash-active'), 450);
 }
 
 function showCorrectFeedback(comboCount) {
@@ -1098,6 +1215,12 @@ function showResult() {
     : '--';
 
   const rank = calcRank(state.correctCount > 0 ? parseFloat(avgTime) : null);
+
+  const modeLabel = {'answer':'アンサー','connect':'コネクト'}[state.mode];
+  const rangeLabel = {'linear':'一次関数','proportion':'比例'}[state.range];
+  const timeLabel = state.timeLimit === 60 ? '1分' : '3分';
+  document.getElementById('result-mode-info').textContent =
+    `${modeLabel} / ${rangeLabel} / ${timeLabel}`;
 
   document.getElementById('result-score').textContent = state.score.toLocaleString();
   document.getElementById('result-correct').textContent = state.correctCount;
@@ -1231,51 +1354,40 @@ function drawGrid(showDots) {
   const sz = canvasSize;
   ctx.clearRect(0, 0, sz, sz);
 
-  // Background
-  ctx.fillStyle = '#06061a';
+  // Background — white
+  ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, sz, sz);
 
-  // Grid lines (light)
-  ctx.strokeStyle = '#1a2040';
-  ctx.lineWidth = 0.5;
-  for (let g = -6; g <= 6; g++) {
-    const {cx} = toCanvas(g, 0);
-    const {cy} = toCanvas(0, g);
-    // vertical
-    ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx, sz); ctx.stroke();
-    // horizontal
-    ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(sz, cy); ctx.stroke();
-  }
-
   if (showDots) {
-    // Grid dots
-    ctx.fillStyle = '#2a3560';
+    // Grid lines — light gray
+    ctx.strokeStyle = '#cccccc';
+    ctx.lineWidth = 1;
+    for (let g = -6; g <= 6; g++) {
+      const {cx} = toCanvas(g, 0);
+      const {cy} = toCanvas(0, g);
+      ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx, sz); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(sz, cy); ctx.stroke();
+    }
+    // Grid dots — medium gray
+    ctx.fillStyle = '#aaaaaa';
     for (let gx = -6; gx <= 6; gx++) {
       for (let gy = -6; gy <= 6; gy++) {
         const {cx, cy} = toCanvas(gx, gy);
         ctx.beginPath();
-        ctx.arc(cx, cy, 1.5, 0, Math.PI * 2);
+        ctx.arc(cx, cy, 1, 0, Math.PI * 2);
         ctx.fill();
       }
     }
   }
 
-  // Axes
-  ctx.strokeStyle = '#3a4a7a';
-  ctx.lineWidth = 1.5;
-  // x-axis
-  ctx.beginPath();
-  ctx.moveTo(0, originY);
-  ctx.lineTo(sz, originY);
-  ctx.stroke();
-  // y-axis
-  ctx.beginPath();
-  ctx.moveTo(originX, 0);
-  ctx.lineTo(originX, sz);
-  ctx.stroke();
+  // Axes — black
+  ctx.strokeStyle = '#000000';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath(); ctx.moveTo(0, originY); ctx.lineTo(sz, originY); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(originX, 0); ctx.lineTo(originX, sz); ctx.stroke();
 
-  // Tick marks and labels
-  ctx.fillStyle = '#5a6a9a';
+  // Tick marks and labels — black
+  ctx.fillStyle = '#000000';
   ctx.font = `${Math.round(cellSize * 0.55)}px monospace`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
@@ -1283,10 +1395,9 @@ function drawGrid(showDots) {
   for (let g = -6; g <= 6; g++) {
     if (g === 0) continue;
     const {cx} = toCanvas(g, 0);
-    // x tick
-    ctx.strokeStyle = '#3a4a7a';
-    ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(cx, originY - 3); ctx.lineTo(cx, originY + 3); ctx.stroke();
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(cx, originY - 4); ctx.lineTo(cx, originY + 4); ctx.stroke();
     if (g % 2 === 0 || cellSize > 20) {
       ctx.fillText(g, cx, originY + 5);
     }
@@ -1297,16 +1408,16 @@ function drawGrid(showDots) {
   for (let g = -6; g <= 6; g++) {
     if (g === 0) continue;
     const {cy} = toCanvas(0, g);
-    ctx.strokeStyle = '#3a4a7a';
-    ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(originX - 3, cy); ctx.lineTo(originX + 3, cy); ctx.stroke();
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(originX - 4, cy); ctx.lineTo(originX + 4, cy); ctx.stroke();
     if (g % 2 === 0 || cellSize > 20) {
       ctx.fillText(g, originX - 5, cy);
     }
   }
 
-  // Origin label
-  ctx.fillStyle = '#4a5a8a';
+  // Origin label — black
+  ctx.fillStyle = '#000000';
   ctx.textAlign = 'right';
   ctx.textBaseline = 'top';
   ctx.fillText('O', originX - 4, originY + 4);
@@ -1324,16 +1435,14 @@ function drawLine(aNumer, aDenom, b, color) {
   const p1 = toCanvas(x1, y1);
   const p2 = toCanvas(x2, y2);
 
-  ctx.strokeStyle = color || '#00d4ff';
+  ctx.strokeStyle = color || '#0044cc';
   ctx.lineWidth = 2.5;
   ctx.lineCap = 'round';
-  ctx.shadowColor = color || '#00d4ff';
-  ctx.shadowBlur = 6;
+  ctx.shadowBlur = 0;
   ctx.beginPath();
   ctx.moveTo(p1.cx, p1.cy);
   ctx.lineTo(p2.cx, p2.cy);
   ctx.stroke();
-  ctx.shadowBlur = 0;
 }
 
 function redrawGraph() {
@@ -1342,7 +1451,7 @@ function redrawGraph() {
   const showDots = !state.isSpecial;
   drawGrid(showDots);
   if (state.mode === 'answer') {
-    drawLine(q.aNumer, q.aDenom, q.b, '#00d4ff');
+    drawLine(q.aNumer, q.aDenom, q.b, state.graphLineColor);
   } else {
     // Draw player's line if 2 points
     drawConnectPoints();
@@ -1352,15 +1461,27 @@ function redrawGraph() {
 // ========================
 // ANSWER MODE
 // ========================
+function fracLabel(n, d) {
+  return `<span class="math-frac"><span class="numer">${n}</span><span class="denom">${d}</span></span>`;
+}
+
 function buildAnswerButtons() {
   const container = document.getElementById('answer-btns');
+  // Row 1 (top):   3/2  2/3  1/2  1/3  1/4
+  // Row 2 (mid):   ←    1    2    3    4
+  // Row 3 (bottom):消去  +    -    x(×2wide)
   const buttons = [
-    {label:'1', val:'1'}, {label:'2', val:'2'}, {label:'3', val:'3'},
-    {label:'4', val:'4'}, {label:'5', val:'5'},
-    {label:'消去', val:'clear', cls:'danger'},
-    {label:'+', val:'+', cls:'special'}, {label:'−', val:'-', cls:'special'},
-    {label:'<span class="math-var" style="font-family:\'Times New Roman\',serif;font-style:italic;font-weight:bold">x</span>', val:'x', cls:'special'},
-    {label:'分の', val:'bun', cls:'special'},
+    {label:fracLabel(3,2), val:'3/2', cls:'frac-btn'},
+    {label:fracLabel(2,3), val:'2/3', cls:'frac-btn'},
+    {label:fracLabel(1,2), val:'1/2', cls:'frac-btn'},
+    {label:fracLabel(1,3), val:'1/3', cls:'frac-btn'},
+    {label:fracLabel(1,4), val:'1/4', cls:'frac-btn'},
+    {label:'←', val:'back', cls:'edit'},
+    {label:'1', val:'1'}, {label:'2', val:'2'}, {label:'3', val:'3'}, {label:'4', val:'4'},
+    {label:'消去', val:'clear', cls:'edit'},
+    {label:'+', val:'+', cls:'special'},
+    {label:'−', val:'-', cls:'special'},
+    {label:'<span class="math-var" style="font-family:\'Times New Roman\',serif;font-style:italic;font-weight:bold">x</span>', val:'x', cls:'special x-wide'},
   ];
   container.innerHTML = buttons.map(b =>
     `<button class="ans-btn ${b.cls||''}" onclick="ansPress('${b.val}')">${b.label}</button>`
@@ -1375,6 +1496,13 @@ function ansPress(val) {
   if (val === 'clear') {
     state.answerInput = [];
     updateInputDisplay();
+    return;
+  }
+  if (val === 'back') {
+    if (state.answerInput.length > 0) {
+      state.answerInput.pop();
+      updateInputDisplay();
+    }
     return;
   }
 
@@ -1393,86 +1521,65 @@ function ansPress(val) {
 }
 
 // Returns {aNumer, aDenom, b} or null if incomplete
+// Fraction token → [numerator, denominator]
+const FRAC_TOKENS = {
+  '3/2': [3, 2], '2/3': [2, 3], '1/2': [1, 2], '1/3': [1, 3], '1/4': [1, 4]
+};
+const DIGIT_TOKENS = ['1', '2', '3', '4'];
+
 function parseAnswerInput(tokens) {
   // Grammar:
-  // Expression: [sign] slope_part [sign integer]
-  // slope_part: integer 'x' | integer 'bun' integer 'x' | 'x'
-  // sign: '+' | '-'
-  // b part: sign integer (no 'x' after)
-
+  //   expression = [sign] coefficient 'x' [sign digit]
+  //   coefficient = fraction_token | digit
+  //   sign = '+' | '-'
   if (tokens.length === 0) return null;
 
   let i = 0;
   const t = tokens;
   const len = t.length;
 
-  // Helper: is digit token?
-  const isDigit = (tk) => ['1','2','3','4','5'].includes(tk);
-  const digits = (start) => { let s = ''; while (start < len && isDigit(t[start])) { s += t[start]; start++; } return {val: s, end: start}; };
-
-  // Sign
+  // Optional leading sign
   let slopeSign = 1;
   if (t[i] === '-') { slopeSign = -1; i++; }
   else if (t[i] === '+') { i++; }
-
   if (i >= len) return null;
 
+  // Coefficient: fraction token, digit, or implicit 1 (x alone means slope=±1)
   let aNumer = 0, aDenom = 1;
-  let b = 0;
-
-  // Check for fraction: number 'bun' number 'x'
-  // or integer 'x'
-  // or just 'x'
-
-  if (t[i] === 'x') {
-    // slope = sign * 1
-    aNumer = slopeSign * 1; aDenom = 1; i++;
-  } else if (isDigit(t[i])) {
-    const {val: numStr, end: e1} = digits(i);
-    i = e1;
-    const num = parseInt(numStr);
-    if (i < len && t[i] === 'bun') {
-      i++; // consume 'bun'
-      // next should be numerator number then 'x'
-      if (i >= len) return null;
-      const {val: numStr2, end: e2} = digits(i);
-      i = e2;
-      if (numStr2 === '') return null;
-      const numer = parseInt(numStr2);
-      if (i < len && t[i] === 'x') {
-        // fraction: denom=num, numer=numer (keep unreduced — only reduced fractions are accepted)
-        aNumer = slopeSign * numer;
-        aDenom = num;
-        i++;
-      } else return null;
-    } else if (i < len && t[i] === 'x') {
-      aNumer = slopeSign * num; aDenom = 1; i++;
-    } else {
-      return null; // number not followed by x or bun
-    }
+  if (FRAC_TOKENS[t[i]]) {
+    [aNumer, aDenom] = FRAC_TOKENS[t[i]];
+    aNumer *= slopeSign;
+    i++;
+  } else if (DIGIT_TOKENS.includes(t[i])) {
+    aNumer = slopeSign * parseInt(t[i]);
+    aDenom = 1;
+    i++;
+  } else if (t[i] === 'x') {
+    // "x" or "-x" — implicit coefficient of 1
+    aNumer = slopeSign;
+    aDenom = 1;
+    // Don't advance i — 'x' is consumed in the next step
   } else {
     return null;
   }
 
-  // Now optional b part: sign integer (no x)
-  if (i >= len) {
-    // b = 0
-    return { aNumer, aDenom, b: 0 };
-  }
+  // 'x' is required
+  if (i >= len || t[i] !== 'x') return null;
+  i++;
+
+  // Optional b part: sign digit
+  if (i >= len) return { aNumer, aDenom, b: 0 };
 
   let bSign = 1;
   if (t[i] === '+') { bSign = 1; i++; }
   else if (t[i] === '-') { bSign = -1; i++; }
-  else return null; // unexpected token
+  else return null;
 
-  if (i >= len) return null;
-  const {val: bStr, end: e3} = digits(i);
-  i = e3;
-  if (bStr === '') return null;
-  b = bSign * parseInt(bStr);
+  if (i >= len || !DIGIT_TOKENS.includes(t[i])) return null;
+  const b = bSign * parseInt(t[i]);
+  i++;
 
   if (i < len) return null; // extra tokens
-
   return { aNumer, aDenom, b };
 }
 
@@ -1490,45 +1597,22 @@ function updateInputDisplay() {
 
 function renderTokens(tokens) {
   if (tokens.length === 0) return '<span style="color:var(--text-dim)">　</span>';
-
-  // Parse for display
   let html = '';
-  let i = 0;
-  const t = tokens;
-  const len = t.length;
-
-  while (i < len) {
-    const tk = t[i];
-    if (tk === '+') { html += '<span style="color:var(--text)">+</span>'; i++; }
-    else if (tk === '-') { html += '<span style="color:var(--accent2)">−</span>'; i++; }
-    else if (tk === 'x') { html += '<span class="math-var">x</span>'; i++; }
-    else if (['1','2','3','4','5'].includes(tk)) {
-      // Check if followed by 'bun'
-      // Look ahead: number(s), then bun, then number(s), then x  => fraction display
-      let j = i;
-      let denomStr = '';
-      while (j < len && ['1','2','3','4','5'].includes(t[j])) { denomStr += t[j]; j++; }
-      if (j < len && t[j] === 'bun') {
-        j++;
-        let numerStr = '';
-        while (j < len && ['1','2','3','4','5'].includes(t[j])) { numerStr += t[j]; j++; }
-        if (numerStr) {
-          html += `<span class="math-frac"><span class="numer">${numerStr}</span><span class="denom">${denomStr}</span></span>`;
-        } else {
-          html += `<span>${denomStr}</span><span style="color:var(--accent)">分の</span>`;
-        }
-        i = j;
-      } else {
-        html += `<span>${denomStr}</span>`;
-        i = j;
-      }
-    } else if (tk === 'bun') {
-      html += '<span style="color:var(--accent)">分の</span>'; i++;
-    } else {
-      i++;
+  for (const tk of tokens) {
+    if (tk === '+') {
+      html += '<span style="color:var(--text)">+</span>';
+    } else if (tk === '-') {
+      html += '<span style="color:var(--accent2)">−</span>';
+    } else if (tk === 'x') {
+      html += '<span class="math-var">x</span>';
+    } else if (FRAC_TOKENS[tk]) {
+      const [n, d] = FRAC_TOKENS[tk];
+      html += `<span class="math-frac"><span class="numer">${n}</span><span class="denom">${d}</span></span>`;
+    } else if (DIGIT_TOKENS.includes(tk)) {
+      html += `<span>${tk}</span>`;
     }
   }
-  return html;
+  return html || '<span style="color:var(--text-dim)">　</span>';
 }
 
 // ========================
@@ -1605,11 +1689,13 @@ function handlePointInput(px, py) {
     if (igx === 0 && igy === 0) return; // can't click origin
     state.connectPoints = [{x:0,y:0}, {x:igx, y:igy}];
   } else {
-    // Check if point already exists
-    const exists = state.connectPoints.some(p => p.x === igx && p.y === igy);
-    if (exists) return;
-    if (state.connectPoints.length >= 2) {
-      state.connectPoints = [state.connectPoints[state.connectPoints.length-1], {x:igx, y:igy}];
+    const existingIdx = state.connectPoints.findIndex(p => p.x === igx && p.y === igy);
+    if (existingIdx !== -1) {
+      // Tap same point again → remove it
+      state.connectPoints.splice(existingIdx, 1);
+    } else if (state.connectPoints.length >= 2) {
+      // Keep FIRST point, replace SECOND with new point
+      state.connectPoints = [state.connectPoints[0], {x:igx, y:igy}];
     } else {
       state.connectPoints.push({x:igx, y:igy});
     }
@@ -1642,16 +1728,16 @@ function drawConnectPoints() {
       const sNum = p2.y - p1.y; // integer
       const sDen = p2.x - p1.x; // integer
       const b = p1.y - (sNum / sDen) * p1.x;
-      drawLine(sNum, sDen, b, '#ff6b35');
+      drawLine(sNum, sDen, b, '#cc2200');
     }
   }
 
   // Draw points
   pts.forEach(p => {
     const {cx, cy} = toCanvas(p.x, p.y);
-    ctx.fillStyle = '#ffd700';
-    ctx.strokeStyle = '#fff';
-    ctx.lineWidth = 2;
+    ctx.fillStyle = '#cc2200';
+    ctx.strokeStyle = '#660000';
+    ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.arc(cx, cy, 6, 0, Math.PI * 2);
     ctx.fill();
@@ -1709,6 +1795,15 @@ window.addEventListener('resize', () => {
 // ========================
 // SOUND (Web Audio API)
 // ========================
+let soundEnabled = true;
+
+function toggleSound() {
+  soundEnabled = !soundEnabled;
+  const btn = document.getElementById('sound-toggle-btn');
+  btn.textContent = soundEnabled ? '♪ ON' : '♪ OFF';
+  btn.classList.toggle('off', !soundEnabled);
+}
+
 let _audioCtx = null;
 
 function getAudioCtx() {
@@ -1753,6 +1848,7 @@ function playNoise(ctx, dur, vol, delay) {
 }
 
 function playSound(type) {
+  if (!soundEnabled) return;
   try {
     const ctx = getAudioCtx();
     switch (type) {
