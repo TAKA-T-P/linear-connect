@@ -59,15 +59,15 @@ html, body {
   top: 10px;
   right: 10px;
   padding: 5px 10px;
-  border: 1px solid var(--border);
-  background: var(--panel);
-  color: var(--text-dim);
+  border: 1px solid #4a5a7a;
+  background: #1a2a44;
+  color: #c0cce0;
   border-radius: 8px;
   font-size: 11px;
   cursor: pointer;
   letter-spacing: 0.5px;
 }
-.sound-toggle-btn.off { color: #555; border-color: #333; }
+.sound-toggle-btn.off { color: #667; border-color: #334; }
 
 .title-logo {
   text-align: center;
@@ -759,6 +759,10 @@ canvas {
   flex-shrink: 0; margin-top: 1px;
 }
 .help-step p { font-size: 13px; line-height: 1.65; color: var(--text); margin: 0; }
+.help-body .math-frac {
+  font-size: 1.15em;
+  vertical-align: middle;
+}
 .help-back-bottom-btn {
   width: 100%;
   padding: 13px;
@@ -777,9 +781,9 @@ canvas {
   top: 10px;
   left: 10px;
   padding: 5px 10px;
-  border: 1px solid var(--border);
-  background: var(--panel);
-  color: var(--text-dim);
+  border: 1px solid #4a5a7a;
+  background: #1a2a44;
+  color: #c0cce0;
   border-radius: 8px;
   font-size: 11px;
   cursor: pointer;
@@ -946,7 +950,7 @@ canvas {
       <p class="help-text">画面には最初から「<span class="math-var">y</span> =」が表示されています。</p>
       <div class="help-ex-box">
         <div class="help-ex-title">入力例：答えが <span class="math-var">y</span> = <span class="math-frac" style="font-size:0.9em"><span class="numer">2</span><span class="denom">3</span></span><span class="math-var">x</span> + 1 のとき</div>
-        <p class="help-text">「<span class="help-em">2/3</span>」→「<span class="help-em"><span class="math-var">x</span></span>」→「<span class="help-em">+</span>」→「<span class="help-em">1</span>」の順にボタンを押す</p>
+        <p class="help-text">「<span class="help-em"><span class="math-frac"><span class="numer">2</span><span class="denom">3</span></span></span>」→「<span class="help-em"><span class="math-var">x</span></span>」→「<span class="help-em">+</span>」→「<span class="help-em">1</span>」の順にボタンを押す</p>
       </div>
       <div class="help-point">
         <span class="help-label">傾きが ±1 のとき</span>
