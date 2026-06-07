@@ -1592,15 +1592,6 @@ function drawHardProportionAnswerGraph(q) {
   ctx.beginPath(); ctx.moveTo(0, originY); ctx.lineTo(sz, originY); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(originX, 0); ctx.lineTo(originX, sz); ctx.stroke();
 
-  // Minimal tick marks (no numbers)
-  ctx.strokeStyle = '#000000'; ctx.lineWidth = 1.5;
-  for (let g = -6; g <= 6; g++) {
-    if (g === 0) continue;
-    const {cx} = toCanvas(g, 0);
-    ctx.beginPath(); ctx.moveTo(cx, originY-4); ctx.lineTo(cx, originY+4); ctx.stroke();
-    const {cy} = toCanvas(0, g);
-    ctx.beginPath(); ctx.moveTo(originX-4, cy); ctx.lineTo(originX+4, cy); ctx.stroke();
-  }
   // Origin label "O"
   const fso = Math.round(canvasSize / 28);
   ctx.fillStyle = '#444'; ctx.font = `${fso}px monospace`;
@@ -2304,13 +2295,15 @@ function checkConnectAnswer() {
     onCorrect();
   } else {
     // Wrong: count and warn if reckless tapping
+    // 比例NORMAL: 2回, それ以外: 4回
+    const warnThreshold = state.range === 'proportion' ? 2 : 4;
     state.wrongTapCount++;
-    if (state.wrongTapCount >= 5) showTapWarning();
+    if (state.wrongTapCount >= warnThreshold) showTapWarning();
   }
 }
 
 function clearPoints() {
-  state.connectPoints = state.range === 'proportion' ? [{x:0,y:0}] : [];
+  state.connectPoints = (state.range === 'proportion' && !state.hardMode) ? [{x:0,y:0}] : [];
   redrawGraph();
 }
 
