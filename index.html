@@ -1987,6 +1987,7 @@ function buildAnswerButtons() {
 // We display it as rendered math
 
 function ansPress(val) {
+  if (state.isPaused) return; // ignore input during correct-feedback display
   if (val === 'clear') {
     state.answerInput = [];
     updateInputDisplay();
@@ -2169,6 +2170,7 @@ function onCanvasTouch(e) {
 }
 
 function handlePointInput(px, py) {
+  if (state.isPaused) return; // ignore taps during correct-feedback display
   // Convert to grid
   const {gx, gy} = toGrid(px, py);
   // Snap to nearest integer grid point
