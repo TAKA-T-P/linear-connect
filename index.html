@@ -1482,11 +1482,11 @@ function nextQuestion() {
   const prevQ = state.currentQuestion;
   let q;
 
-  // Hard answer+linear: ALL questions use special (axis-intercept) questions with no grid
+  // Hard answer+linear: same question pool as NORMAL, display 2 hint points instead of grid
   if (state.hardMode && state.mode === 'answer' && state.range === 'linear') {
-    state.isSpecial = true;
+    if (state.isSpecial) state.isSpecial = false;
     let attempts = 0;
-    do { q = generateSpecialQuestion(); attempts++; }
+    do { q = generateQuestion(); attempts++; }
     while (attempts < 20 && sameQuestion(q, prevQ));
   } else if (state.mode === 'answer' && state.range !== 'proportion' && prevCombo > 0 && prevCombo % 5 === 0 && !state.isSpecial) {
     state.isSpecial = true;
@@ -1501,6 +1501,11 @@ function nextQuestion() {
   // Hard answer+proportion: pick a display point on the line
   if (state.hardMode && state.mode === 'answer' && state.range === 'proportion') {
     q.hardPropPoint = findHardProportionPoint(q);
+  }
+
+  // Hard answer+linear: pick y-intercept + one lattice point to show as hints
+  if (state.hardMode && state.mode === 'answer' && state.range === 'linear') {
+    q.hardLinearPoints = findHardLinearPoints(q);
   }
 
   state.currentQuestion = q;
@@ -1577,6 +1582,88 @@ function findHardProportionPoint(q) {
   }
   if (!candidates.length) return null;
   return candidates[Math.floor(Math.random() * candidates.length)];
+}
+
+// Hard answer+linear: find y-intercept and one lattice point on the line (x≠0)
+function findHardLinearPoints(q) {
+  const p1 = {x: 0, y: q.b}; // y-intercept
+  const candidates = [];
+  for (let k = -5; k <= 5; k++) {
+    if (k === 0) continue;
+    const px = k * q.aDenom;
+    const py = q.aNumer * k + q.b; // y = (aNumer/aDenom)*(k*aDenom) + b = aNumer*k + b
+    if (Math.abs(px) <= 5 && Math.abs(py) <= 5) candidates.push({x: px, y: py});
+  }
+  if (!candidates.length) {
+    // fallback: one step along aDenom
+    return [p1, {x: q.aDenom, y: q.aNumer + q.b}];
+  }
+  return [p1, candidates[Math.floor(Math.random() * candidates.length)]];
+}
+
+// Hard answer+linear: axes only, line + 2 labeled points (y-intercept + lattice point)
+function drawHardLinearAnswerGraph(q) {
+  const ctx = graphCtx;
+  const sz = canvasSize;
+  ctx.clearRect(0, 0, sz, sz);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, sz, sz);
+
+  // Axes only (no tick marks, no axis labels)
+  ctx.strokeStyle = '#000000'; ctx.lineWidth = 2.5;
+  ctx.beginPath(); ctx.moveTo(0, originY); ctx.lineTo(sz, originY); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(originX, 0); ctx.lineTo(originX, sz); ctx.stroke();
+
+  // Origin label "O"
+  const fso = Math.round(sz / 28);
+  ctx.fillStyle = '#444'; ctx.font = `${fso}px monospace`;
+  ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+  ctx.fillText('O', originX - 4, originY + 4);
+
+  // Draw the line
+  drawLine(q.aNumer, q.aDenom, q.b, state.graphLineColor);
+
+  // Draw 2 hint points with coordinate labels
+  const pts = q.hardLinearPoints;
+  if (!pts) return;
+
+  const fs = Math.max(12, Math.round(sz / 26));
+  ctx.font = `bold ${fs}px sans-serif`;
+  const slope = q.aNumer / q.aDenom;
+  const margin = 4;
+
+  pts.forEach(pt => {
+    const {cx, cy} = toCanvas(pt.x, pt.y);
+    ctx.fillStyle = '#cc2200'; ctx.strokeStyle = '#880000'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(cx, cy, 7, 0, Math.PI * 2);
+    ctx.fill(); ctx.stroke();
+
+    // Label placement
+    let placeRight, placeBottom;
+    if (pt.x === 0) {
+      // y-intercept on y-axis: label to the right; above if slope<0, below if slope>0
+      placeRight  = true;
+      placeBottom = slope > 0;
+    } else {
+      placeRight  = pt.x > 0;
+      placeBottom = (pt.x > 0) === (slope > 0);
+    }
+
+    const offX = 9, offY = 5;
+    let lx = cx + (placeRight  ? offX  : -offX);
+    let ly = cy + (placeBottom ? offY  : -offY);
+    ctx.textAlign    = placeRight  ? 'left'   : 'right';
+    ctx.textBaseline = placeBottom ? 'top'    : 'bottom';
+    ctx.fillStyle    = '#111111';
+
+    const label = `(${pt.x}, ${pt.y})`;
+    const tw = ctx.measureText(label).width;
+    if (placeRight)  lx = Math.min(lx, sz - tw - margin);
+    else             lx = Math.max(lx, tw + margin);
+    if (placeBottom) ly = Math.min(ly, sz - fs - margin);
+    else             ly = Math.max(ly, fs + margin);
+    ctx.fillText(label, lx, ly);
+  });
 }
 
 // Hard answer+proportion: axes only, no labels, line + highlighted point with coord label
@@ -1940,6 +2027,12 @@ function redrawGraph() {
   // Hard answer+proportion: special display (no labels, just axes + line + point)
   if (state.hardMode && state.mode === 'answer' && state.range === 'proportion') {
     drawHardProportionAnswerGraph(q);
+    return;
+  }
+
+  // Hard answer+linear: axes only + line + y-intercept & lattice point labels
+  if (state.hardMode && state.mode === 'answer' && state.range === 'linear') {
+    drawHardLinearAnswerGraph(q);
     return;
   }
 
