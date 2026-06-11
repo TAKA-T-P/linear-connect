@@ -1803,12 +1803,12 @@ const RANKS = ['皆伝','十段','九段','八段','七段','六段','五段','�
 
 function getTimeB() {
   if (state.hardMode) {
-    if (state.mode === 'answer'  && state.range === 'linear')     return 3.8;
+    if (state.mode === 'answer'  && state.range === 'linear')     return 4.4;
     if (state.mode === 'answer'  && state.range === 'proportion') return 2.5;
     if (state.mode === 'connect' && state.range === 'linear')     return 3.0;
     if (state.mode === 'connect' && state.range === 'proportion') return 2.0;
   }
-  if (state.mode === 'answer'  && state.range === 'linear')     return 3.8;
+  if (state.mode === 'answer'  && state.range === 'linear')     return 4.0;
   if (state.mode === 'answer'  && state.range === 'proportion') return 2.5;
   if (state.mode === 'connect' && state.range === 'linear')     return 2.5;
   if (state.mode === 'connect' && state.range === 'proportion') return 1.5;
