@@ -105,6 +105,25 @@ html, body {
   margin-bottom: 8px;
   padding-left: 2px;
 }
+.time-label-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.time-label-row label {
+  display: inline;
+  margin-bottom: 0;
+}
+.challenge-hint {
+  display: none;
+  font-size: 10px;
+  color: #ff6600;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: nowrap;
+}
 
 /* Mode selector buttons */
 .mode-btns {
@@ -909,10 +928,14 @@ canvas {
   </div>
 
   <div class="title-section">
-    <label>プレイ時間</label>
+    <div class="time-label-row">
+      <label>プレイ時間</label>
+      <span class="challenge-hint" id="challenge-hint">コンボが切れたら即終了！</span>
+    </div>
     <div class="toggle-group">
       <button class="toggle-btn active" onclick="selectTime(60)">1分</button>
       <button class="toggle-btn" onclick="selectTime(180)">3分</button>
+      <button class="toggle-btn" onclick="selectTime('challenge')">チャレンジ</button>
     </div>
   </div>
 
@@ -1225,6 +1248,9 @@ function selectTime(sec) {
   const btns = document.querySelectorAll('.toggle-group')[1].querySelectorAll('.toggle-btn');
   btns[0].classList.toggle('active', sec === 60);
   btns[1].classList.toggle('active', sec === 180);
+  btns[2].classList.toggle('active', sec === 'challenge');
+  const hint = document.getElementById('challenge-hint');
+  if (hint) hint.style.display = sec === 'challenge' ? 'inline' : 'none';
 }
 
 function showScreen(id) {
@@ -1290,7 +1316,7 @@ function initGame() {
   state.maxCombo = 0;
   state.correctCount = 0;
   state.totalAnswerTime = 0;
-  state.timerRemaining = state.timeLimit;
+  state.timerRemaining = state.timeLimit === 'challenge' ? 0 : state.timeLimit;
   state.isTimeUp = false;
   state.isPaused = false;
   state.answerInput = [];
@@ -1321,7 +1347,7 @@ function updateHUD() {
   document.getElementById('combo-val').textContent = state.combo;
 
   const tv = document.getElementById('timer-val');
-  tv.classList.toggle('warning', state.timerRemaining <= 10);
+  tv.classList.toggle('warning', state.timeLimit !== 'challenge' && state.timerRemaining <= 10);
 }
 
 // ========================
@@ -1329,6 +1355,14 @@ function updateHUD() {
 // ========================
 function startTimer() {
   if (state.timerInterval) clearInterval(state.timerInterval);
+  if (state.timeLimit === 'challenge') {
+    // Count-up: timer shows elapsed play time
+    state.timerInterval = setInterval(() => {
+      state.timerRemaining++;
+      updateHUD();
+    }, 1000);
+    return;
+  }
   state.timerInterval = setInterval(() => {
     if (state.timerRemaining > 0) {
       state.timerRemaining--;
@@ -1352,10 +1386,12 @@ function stopTimer() {
 function showTimeoutAndEnd() {
   stopTimer();
   stopGauge();
-  // Count the unanswered last question's elapsed time to prevent "quick-answer-then-wait" exploit
-  const lastElapsed = (performance.now() - state.questionStartTime) / 1000;
-  state.totalAnswerTime += lastElapsed;
-  state.correctCount += 1;
+  if (state.timeLimit !== 'challenge') {
+    // Count the unanswered last question's elapsed time to prevent "quick-answer-then-wait" exploit
+    const lastElapsed = (performance.now() - state.questionStartTime) / 1000;
+    state.totalAnswerTime += lastElapsed;
+    state.correctCount += 1;
+  }
   const fb = document.getElementById('feedback-overlay');
   const ft = document.getElementById('feedback-text');
   ft.className = 'feedback-timeout';
@@ -1399,6 +1435,11 @@ function startGauge() {
 
     if (state.gaugeValue <= 0) {
       stopGauge();
+      // チャレンジモード: ゲージ切れ即ゲームオーバー
+      if (state.timeLimit === 'challenge') {
+        showTimeoutAndEnd();
+        return;
+      }
       // combo break → reset to 0; next correct answer will be combo=1 (no gauge)
       if (state.combo > 0) {
         state.combo = 0;
@@ -1801,13 +1842,27 @@ function showResult() {
     ? (state.totalAnswerTime / state.correctCount).toFixed(2)
     : '--';
 
+  // Challenge: low correct-count penalty (≤5問で段位ダウン)
+  if (state.timeLimit === 'challenge' && state.correctCount <= 5) {
+    const diff = 5 - state.correctCount;
+    state.rankPenalty += diff * diff;
+  }
+
   const baseRank = calcRank(state.correctCount > 0 ? parseFloat(avgTime) : null);
-  const rankWithTime = state.timeLimit === 180 ? baseRank + '＋' : baseRank;
-  const rank = state.hardMode ? 'HARD ' + rankWithTime : rankWithTime;
+  let rankSuffix = '';
+  if (state.timeLimit === 'challenge') {
+    const playedSec = state.timerRemaining; // count-up value = elapsed seconds
+    if (playedSec >= 180) rankSuffix = '★';
+    else if (playedSec >= 120) rankSuffix = '＋';
+  } else if (state.timeLimit === 180) {
+    rankSuffix = '＋';
+  }
+  const rankWithSuffix = baseRank + rankSuffix;
+  const rank = state.hardMode ? 'HARD ' + rankWithSuffix : rankWithSuffix;
 
   const modeLabel = {'answer':'アンサー','connect':'コネクト'}[state.mode];
   const rangeLabel = {'linear':'一次関数','proportion':'比例'}[state.range];
-  const timeLabel = state.timeLimit === 60 ? '1分' : '3分';
+  const timeLabel = state.timeLimit === 60 ? '1分' : state.timeLimit === 180 ? '3分' : 'チャレンジ';
   document.getElementById('result-mode-info').textContent =
     `${modeLabel} / ${rangeLabel} / ${timeLabel}`;
 
