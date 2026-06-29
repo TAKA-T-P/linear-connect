@@ -428,7 +428,7 @@ html, body {
   box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 .hint-text {
-  font-size: 14px;
+  font-size: 18px;
   font-weight: 700;
   color: #e65000;
   white-space: nowrap;
@@ -2276,7 +2276,7 @@ function onHintPress() {
     slopeHtml = String(q.aNumer);
   } else {
     const sign = q.aNumer < 0 ? '−' : '';
-    slopeHtml = `${sign}<span class="math-frac" style="font-size:0.85em"><span class="numer">${Math.abs(q.aNumer)}</span><span class="denom">${q.aDenom}</span></span>`;
+    slopeHtml = `${sign}<span class="math-frac" style="font-size:1em"><span class="numer">${Math.abs(q.aNumer)}</span><span class="denom">${q.aDenom}</span></span>`;
   }
   el.innerHTML = `<span class="hint-text">傾き&thinsp;${slopeHtml}</span>`;
 }
