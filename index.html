@@ -1843,9 +1843,9 @@ function showResult() {
     : '--';
 
   // Challenge: low correct-count penalty (≤5問で段位ダウン)
-  if (state.timeLimit === 'challenge' && state.correctCount <= 5) {
-    const diff = 5 - state.correctCount;
-    state.rankPenalty += diff * diff;
+  if (state.timeLimit === 'challenge') {
+    if (state.correctCount <= 1) state.rankPenalty += 15;
+    else if (state.correctCount < 10) state.rankPenalty += 10 - state.correctCount;
   }
 
   const baseRank = calcRank(state.correctCount > 0 ? parseFloat(avgTime) : null);
