@@ -409,6 +409,31 @@ html, body {
   font-style: italic;
   font-weight: bold;
 }
+.hint-area {
+  margin-left: auto;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+.hint-btn {
+  font-size: 13px;
+  font-weight: 700;
+  background: #ff9500;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 4px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+.hint-text {
+  font-size: 14px;
+  font-weight: 700;
+  color: #e65000;
+  white-space: nowrap;
+  font-family: sans-serif;
+}
 
 .answer-btns-grid {
   display: grid;
@@ -1140,6 +1165,7 @@ const state = {
   isTimeUp: false,
   afterTimeUpTimeout: null,
   isPaused: false,     // true while correct-answer feedback is showing
+  hintTimeout: null,   // setTimeout handle for the 15-second hint trigger
   currentQuestion: null,
   isSpecial: false,    // special (no-grid) question
   lastComboAtSpecialStart: 0,
@@ -1514,6 +1540,7 @@ function nextQuestion() {
   if (state.mode === 'answer') {
     state.answerInput = [];
     renderAnswerMode();
+    startHintTimer();
   } else {
     state.wrongTapCount = 0;
     state.connectPoints = [];
@@ -1543,6 +1570,8 @@ function onCorrect() {
 
   // Flash effect on 5-combo milestones
   if (state.combo % 5 === 0) triggerScreenFlash();
+
+  clearHintTimer();
 
   // Pause timer and gauge while feedback is shown
   state.isPaused = true;
@@ -1763,6 +1792,7 @@ function hideFeedback() {
 // ========================
 function showResult() {
   hideFeedback();
+  clearHintTimer();
   document.getElementById('tap-warning-overlay').classList.remove('visible');
   stopTimer();
   stopGauge();
@@ -1852,6 +1882,7 @@ function buildGameBody() {
         <div class="answer-display" id="answer-display">
           <span class="prefix"><span class="math-var" style="font-family:'Times New Roman',serif;font-style:italic;font-weight:bold">y</span>&nbsp;=&nbsp;</span>
           <span class="input-val" id="input-val-display"></span>
+          <span class="hint-area" id="hint-area"></span>
         </div>
         <div class="answer-btns-grid" id="answer-btns"></div>
       </div>`;
@@ -2220,6 +2251,34 @@ function renderAnswerMode() {
   updateInputDisplay();
   initCanvas();
   redrawGraph();
+}
+
+function startHintTimer() {
+  clearHintTimer();
+  state.hintTimeout = setTimeout(() => {
+    const el = document.getElementById('hint-area');
+    if (el) el.innerHTML = '<button class="hint-btn" onclick="onHintPress()">ヒント</button>';
+  }, 15000);
+}
+
+function clearHintTimer() {
+  if (state.hintTimeout) { clearTimeout(state.hintTimeout); state.hintTimeout = null; }
+  const el = document.getElementById('hint-area');
+  if (el) el.innerHTML = '';
+}
+
+function onHintPress() {
+  const el = document.getElementById('hint-area');
+  if (!el) return;
+  const q = state.currentQuestion;
+  let slopeHtml;
+  if (q.aDenom === 1) {
+    slopeHtml = String(q.aNumer);
+  } else {
+    const sign = q.aNumer < 0 ? '−' : '';
+    slopeHtml = `${sign}<span class="math-frac" style="font-size:0.85em"><span class="numer">${Math.abs(q.aNumer)}</span><span class="denom">${q.aDenom}</span></span>`;
+  }
+  el.innerHTML = `<span class="hint-text">傾き&thinsp;${slopeHtml}</span>`;
 }
 
 function formatFormula(q) {
