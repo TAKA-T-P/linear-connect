@@ -737,6 +737,28 @@ canvas {
   line-height: 1.2;
 }
 
+/* Time warning overlay (残り1分 / 残り30秒) */
+.time-warning-overlay {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(220, 80, 0, 0.88);
+  color: #fff;
+  font-size: 28px;
+  font-weight: 900;
+  padding: 14px 28px;
+  border-radius: 14px;
+  pointer-events: none;
+  display: none;
+  z-index: 200;
+  white-space: nowrap;
+}
+.time-warning-overlay.visible {
+  display: block;
+  animation: feedbackPop 0.18s ease-out;
+}
+
 /* Screen flash for 5-combo milestones */
 #flash-overlay {
   position: fixed;
@@ -914,8 +936,8 @@ canvas {
   <div class="title-section">
     <label>PLAY MODE</label>
     <div class="mode-btns">
-      <button class="mode-btn active" onclick="selectMode('answer')">アンサー</button>
-      <button class="mode-btn" onclick="selectMode('connect')">コネクト</button>
+      <button class="mode-btn active" onclick="selectMode('connect')">コネクト</button>
+      <button class="mode-btn" onclick="selectMode('answer')">アンサー</button>
     </div>
   </div>
 
@@ -1151,6 +1173,9 @@ canvas {
   <div class="tap-warning-line">タップしよう！</div>
 </div>
 
+<!-- Time warning overlay (残り1分 / 残り30秒) -->
+<div class="time-warning-overlay" id="time-warning-overlay"></div>
+
 <!-- Screen flash overlay (5-combo milestone) -->
 <div id="flash-overlay"></div>
 
@@ -1166,7 +1191,7 @@ canvas {
 // STATE
 // ========================
 const state = {
-  mode: 'answer',       // 'answer' | 'connect'
+  mode: 'connect',      // 'answer' | 'connect'
   range: 'linear',     // 'linear' | 'proportion'
   timeLimit: 60,
   hardMode: false,
@@ -1232,7 +1257,7 @@ function toggleHardMode() {
 function selectMode(mode) {
   state.mode = mode;
   document.querySelectorAll('.mode-btn').forEach((b, i) => {
-    b.classList.toggle('active', (i === 0 && mode === 'answer') || (i === 1 && mode === 'connect'));
+    b.classList.toggle('active', (i === 0 && mode === 'connect') || (i === 1 && mode === 'answer'));
   });
 }
 
@@ -1367,12 +1392,16 @@ function startTimer() {
     if (state.timerRemaining > 0) {
       state.timerRemaining--;
       updateHUD();
+      if (state.timeLimit === 180) {
+        if (state.timerRemaining === 60) showTimeWarning('残り1分');
+        else if (state.timerRemaining === 30) showTimeWarning('残り30秒');
+      }
       if (state.timerRemaining === 0) {
         state.isTimeUp = true;
-        // After 10 more seconds, force end
+        // After 20 more seconds, force end
         state.afterTimeUpTimeout = setTimeout(() => {
           showTimeoutAndEnd();
-        }, 10000);
+        }, 20000);
       }
     }
   }, 1000);
@@ -1631,6 +1660,16 @@ function onCorrect() {
   }
 }
 
+function showTimeWarning(text) {
+  const el = document.getElementById('time-warning-overlay');
+  if (!el) return;
+  el.textContent = text;
+  el.classList.remove('visible');
+  void el.offsetWidth;
+  el.classList.add('visible');
+  setTimeout(() => el.classList.remove('visible'), 1000);
+}
+
 function showTapWarning() {
   state.rankPenalty++;
   state.wrongTapCount = 0;
@@ -1854,7 +1893,7 @@ function showResult() {
   if (state.timeLimit === 'challenge') {
     const playedSec = state.timerRemaining; // count-up value = elapsed seconds
     if (playedSec >= 180) rankSuffix = '★';
-    else if (playedSec >= 120) rankSuffix = '＋';
+    else if (playedSec >= 90) rankSuffix = '＋';
   } else if (state.timeLimit === 180) {
     rankSuffix = '＋';
   }
