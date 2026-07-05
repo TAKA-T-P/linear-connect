@@ -50,7 +50,7 @@ html, body {
 #title-screen {
   background: radial-gradient(ellipse at center, #181a60 0%, #0c0c22 100%);
   justify-content: flex-start;
-  padding-top: 32px;
+  padding-top: 42px;
   overflow-y: auto;
   position: relative;
 }
@@ -770,6 +770,140 @@ canvas {
   opacity: 0;
 }
 
+/* ===== PRACTICE SCREEN ===== */
+#practice-screen {
+  padding: 0;
+  justify-content: flex-start;
+  overflow-y: auto;
+  background: var(--bg);
+}
+.practice-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  gap: 6px;
+}
+.practice-progress {
+  font-size: 20px;
+  font-weight: 900;
+  color: var(--accent);
+  min-width: 60px;
+}
+.practice-title-text {
+  font-size: 12px;
+  color: var(--text-dim);
+  flex: 1;
+  text-align: center;
+}
+.practice-exit-btn {
+  font-size: 13px;
+  padding: 5px 12px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+#practice-canvas-area {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 6px 8px 0;
+  flex-shrink: 0;
+}
+.practice-overlay {
+  position: absolute;
+  display: none;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.55);
+  border-radius: 14px;
+  padding: 14px 36px;
+  z-index: 10;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  white-space: nowrap;
+}
+#practice-canvas {
+  border-radius: 8px;
+  background: #fff;
+  display: block;
+}
+.practice-desc {
+  padding: 8px 14px 4px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 2;
+}
+.practice-blank {
+  color: var(--accent);
+  font-family: 'Times New Roman', serif;
+  font-style: italic;
+  font-size: 1.1em;
+  font-weight: bold;
+}
+.practice-hint-area {
+  padding: 5px 12px 4px;
+  background: rgba(0, 80, 180, 0.07);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.practice-hint-line1 {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 1px;
+}
+.practice-hint-line2 {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+.practice-correct-msg {
+  font-size: 28px;
+  font-weight: 900;
+  color: #00e566;
+  text-shadow: 0 0 12px rgba(0, 200, 80, 0.8);
+}
+.practice-wrong-msg {
+  font-size: 26px;
+  font-weight: 900;
+  color: #ff5555;
+  text-shadow: 0 0 10px rgba(255, 60, 60, 0.7);
+}
+.practice-complete-msg {
+  font-size: 26px;
+  font-weight: 900;
+  color: #ffd700;
+  text-shadow: 0 0 12px rgba(255, 200, 0, 0.8);
+}
+.practice-btns-wrap {
+  padding: 4px 8px 10px;
+  flex-shrink: 0;
+}
+.practice-launch-btn {
+  display: block;
+  width: 100%;
+  padding: 13px;
+  margin-bottom: 16px;
+  background: linear-gradient(135deg, #00aa66 0%, #0066cc 100%);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  letter-spacing: 1px;
+}
+
 /* ===== HELP SCREEN ===== */
 #help-screen {
   background: radial-gradient(ellipse at center, #181a60 0%, #0c0c22 100%);
@@ -902,13 +1036,15 @@ canvas {
   position: absolute;
   top: 10px;
   left: 10px;
-  padding: 5px 10px;
-  border: 1px solid #4a5a7a;
-  background: #1a2a44;
-  color: #c0cce0;
+  padding: 3px 13px;
+  border: 1.5px solid #38bdf8;
+  background: #0c4a6e;
+  color: #7dd3fc;
   border-radius: 8px;
-  font-size: 11px;
+  font-size: 12px;
+  font-weight: 700;
   cursor: pointer;
+  letter-spacing: 0.5px;
 }
 
 /* Animations */
@@ -1057,6 +1193,27 @@ canvas {
   </div>
 </div>
 
+<!-- PRACTICE SCREEN -->
+<div id="practice-screen" class="screen">
+  <div class="practice-header">
+    <span class="practice-progress" id="practice-progress">0 / 10</span>
+    <span class="practice-title-text">傾きを読み取る練習</span>
+    <button class="practice-exit-btn" onclick="exitPractice()">終了</button>
+  </div>
+  <div class="practice-hint-area">
+    <div class="practice-hint-line1">傾きは<span class="math-frac" style="font-size:1.35em;vertical-align:middle;font-weight:900"><span class="numer">縦</span><span class="denom">横</span></span>で求めるよ！</div>
+    <div class="practice-hint-line2" id="practice-hint-dir"></div>
+  </div>
+  <div id="practice-canvas-area">
+    <canvas id="practice-canvas"></canvas>
+    <div class="practice-overlay" id="practice-overlay"></div>
+  </div>
+  <div class="practice-desc" id="practice-desc"></div>
+  <div class="practice-btns-wrap">
+    <div class="answer-btns-grid" id="practice-btns"></div>
+  </div>
+</div>
+
 <!-- HELP SCREEN -->
 <div id="help-screen" class="screen">
   <div class="help-header">
@@ -1064,6 +1221,8 @@ canvas {
     <button class="help-back-header-btn" onclick="showScreen('title-screen')">タイトルに戻る</button>
   </div>
   <div class="help-body">
+
+    <button class="practice-launch-btn" onclick="startPractice()">▶ 傾きを読み取る練習</button>
 
     <!-- 1. ゲームの遊び方 -->
     <div class="help-card">
@@ -1163,6 +1322,7 @@ canvas {
       </div>
     </div>
 
+    <button class="practice-launch-btn" onclick="startPractice()">▶ 傾きを読み取る練習</button>
     <button class="help-back-bottom-btn" onclick="showScreen('title-screen')">タイトルに戻る</button>
   </div>
 </div>
@@ -1309,13 +1469,14 @@ function startGame() {
   runCountdown();
 }
 
-function runCountdown() {
+function runCountdown(onComplete) {
   const el = document.getElementById('cd-number');
   const steps = ['3', '2', '1', 'START!'];
   let i = 0;
 
   function showStep() {
     if (i >= steps.length) {
+      if (onComplete) { onComplete(); return; }
       showScreen('game-screen');
       // Wait one frame for layout to settle before measuring canvas area
       requestAnimationFrame(() => setTimeout(initGame, 0));
@@ -2738,6 +2899,226 @@ window.addEventListener('resize', () => {
 });
 
 // ========================
+// PRACTICE MODE
+// ========================
+const practiceState = {
+  question: null,
+  input: [],
+  correctCount: 0,
+  showingFeedback: false
+};
+
+function startPractice() {
+  document.getElementById('cd-mode-label').textContent = '傾きを答えよう！';
+  document.getElementById('cd-instruction').innerHTML =
+    '傾きは<span class="math-frac" style="font-size:0.85em;vertical-align:middle">' +
+    '<span class="numer">縦</span><span class="denom">横</span></span>で求めるよ！';
+  showScreen('countdown-screen');
+  runCountdown(() => {
+    showScreen('practice-screen');
+    buildPracticeButtons();
+    practiceState.correctCount = 0;
+    practiceState.input = [];
+    practiceState.showingFeedback = false;
+    document.getElementById('practice-progress').textContent = '0 / 10';
+    const ov = document.getElementById('practice-overlay');
+    ov.style.display = 'none'; ov.innerHTML = '';
+    requestAnimationFrame(() => setTimeout(nextPracticeQuestion, 0));
+  });
+}
+
+function generatePracticeQuestion() {
+  const origRange = state.range;
+  state.range = 'linear';
+  const prevQ = practiceState.question;
+  let q, attempts = 0;
+  do {
+    q = generateQuestion();
+    attempts++;
+  } while (attempts < 100 && (
+    Math.abs(q.aNumer + q.b) > 5 ||
+    (prevQ && prevQ.aNumer === q.aNumer && prevQ.aDenom === q.aDenom && prevQ.b === q.b)
+  ));
+  state.range = origRange;
+  return q;
+}
+
+function nextPracticeQuestion() {
+  practiceState.question = generatePracticeQuestion();
+  practiceState.input = [];
+  const q = practiceState.question;
+  const xStep = q.aDenom;
+  const yStep = Math.abs(q.aNumer);
+  const dir = q.aNumer > 0 ? '上' : '下';
+  document.getElementById('practice-desc').innerHTML =
+    `右に<b>${xStep}</b>，${dir}に<b>${yStep}</b> 移動するので，傾きは ` +
+    `<span class="practice-blank">（<span id="practice-val-display"></span>）</span>`;
+  updatePracticeDisplay();
+  // Draw canvas
+  const pc = document.getElementById('practice-canvas');
+  const area = document.getElementById('practice-canvas-area');
+  const rect = area.getBoundingClientRect();
+  const sz = Math.max(160, Math.min(rect.width - 16, 270));
+  canvasSize = sz;
+  pc.width = sz; pc.height = sz;
+  pc.style.width = sz + 'px'; pc.style.height = sz + 'px';
+  cellSize = sz / 13;
+  originX = sz / 2; originY = sz / 2;
+  graphCanvas = pc; graphCtx = pc.getContext('2d');
+  drawGrid(true);
+  drawLine(q.aNumer, q.aDenom, q.b, state.graphLineColor);
+  // Update direction hint
+  const hintDir = document.getElementById('practice-hint-dir');
+  if (hintDir) hintDir.textContent = q.aNumer > 0
+    ? 'グラフが右上がりなので傾きは正！'
+    : 'グラフが右下がりなので傾きは負！';
+  // Dots first, then arrows (arrows drawn on top)
+  const c1 = toCanvas(0, q.b);
+  const cm = toCanvas(q.aDenom, q.b);
+  const c2 = toCanvas(q.aDenom, q.aNumer + q.b);
+  [c1, c2].forEach(p => {
+    graphCtx.fillStyle = '#cc2200'; graphCtx.strokeStyle = '#880000'; graphCtx.lineWidth = 1.5;
+    graphCtx.beginPath(); graphCtx.arc(p.cx, p.cy, 7, 0, Math.PI * 2);
+    graphCtx.fill(); graphCtx.stroke();
+  });
+  drawCanvasArrow(graphCtx, c1.cx, c1.cy, cm.cx, cm.cy, '#e67e00');
+  drawCanvasArrow(graphCtx, cm.cx, cm.cy, c2.cx, c2.cy, '#e67e00');
+}
+
+function drawCanvasArrow(ctx, x1, y1, x2, y2, color) {
+  const dx = x2 - x1, dy = y2 - y1;
+  if (Math.abs(dx) + Math.abs(dy) < 2) return;
+  const headLen = 9;
+  const angle = Math.atan2(dy, dx);
+  ctx.strokeStyle = color; ctx.fillStyle = color;
+  ctx.lineWidth = 2.5; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - headLen * Math.cos(angle - Math.PI / 6), y2 - headLen * Math.sin(angle - Math.PI / 6));
+  ctx.lineTo(x2 - headLen * Math.cos(angle + Math.PI / 6), y2 - headLen * Math.sin(angle + Math.PI / 6));
+  ctx.closePath(); ctx.fill();
+}
+
+function buildPracticeButtons() {
+  const container = document.getElementById('practice-btns');
+  const buttons = [
+    {label:fracLabel(3,2), val:'3/2', cls:'frac-btn'},
+    {label:fracLabel(2,3), val:'2/3', cls:'frac-btn'},
+    {label:fracLabel(1,2), val:'1/2', cls:'frac-btn'},
+    {label:fracLabel(1,3), val:'1/3', cls:'frac-btn'},
+    {label:fracLabel(1,4), val:'1/4', cls:'frac-btn'},
+    {label:'←', val:'back', cls:'edit operator-btn'},
+    {label:'1', val:'1'}, {label:'2', val:'2'}, {label:'3', val:'3'}, {label:'4', val:'4'},
+    {label:'消去', val:'clear', cls:'edit'},
+    {label:'+', val:'+', cls:'special operator-btn x-wide'},
+    {label:'−', val:'-', cls:'special operator-btn x-wide'},
+  ];
+  container.innerHTML = buttons.map(b =>
+    `<button class="ans-btn ${b.cls||''}" onclick="practicePress('${b.val}')">${b.label}</button>`
+  ).join('');
+}
+
+function parseSlopeInput(tokens) {
+  if (tokens.length === 0) return null;
+  let i = 0; const t = tokens;
+  let slopeSign = 1;
+  if (t[i] === '-') { slopeSign = -1; i++; }
+  else if (t[i] === '+') { i++; }
+  if (i >= t.length) return null;
+  let aNumer, aDenom;
+  if (FRAC_TOKENS[t[i]]) {
+    [aNumer, aDenom] = FRAC_TOKENS[t[i]]; aNumer *= slopeSign; i++;
+  } else if (DIGIT_TOKENS.includes(t[i])) {
+    aNumer = slopeSign * parseInt(t[i]); aDenom = 1; i++;
+  } else { return null; }
+  if (i < t.length) return null;
+  return { aNumer, aDenom };
+}
+
+function practicePress(val) {
+  if (practiceState.showingFeedback) return;
+  if (val === 'clear') {
+    practiceState.input = [];
+    updatePracticeDisplay();
+    return;
+  }
+  if (val === 'back') {
+    if (practiceState.input.length > 0) { practiceState.input.pop(); updatePracticeDisplay(); }
+    return;
+  }
+  practiceState.input.push(val);
+  updatePracticeDisplay();
+  const parsed = parseSlopeInput(practiceState.input);
+  if (parsed !== null) checkPracticeAnswer(parsed);
+}
+
+function updatePracticeDisplay() {
+  const el = document.getElementById('practice-val-display');
+  if (!el) return;
+  const tokens = practiceState.input.filter(t => t !== 'x');
+  const rendered = renderTokens(tokens);
+  el.innerHTML = rendered.includes('text-dim') ? '' : rendered;
+}
+
+function checkPracticeAnswer(parsed) {
+  const q = practiceState.question;
+  if (fractionsEqual(parsed.aNumer, parsed.aDenom, q.aNumer, q.aDenom)) {
+    practiceOnCorrect(); // keep input showing during feedback
+  } else {
+    practiceState.input = []; // clear wrong input immediately
+    updatePracticeDisplay();
+    practiceOnWrong(q);
+  }
+}
+
+function practiceOnCorrect() {
+  practiceState.correctCount++;
+  practiceState.showingFeedback = true;
+  document.getElementById('practice-progress').textContent = `${practiceState.correctCount} / 10`;
+  const ov = document.getElementById('practice-overlay');
+  ov.innerHTML = '<span class="practice-correct-msg">正解！</span>';
+  ov.style.display = 'flex';
+  playSound('correct');
+  setTimeout(() => {
+    ov.style.display = 'none';
+    ov.innerHTML = '';
+    practiceState.input = [];
+    practiceState.showingFeedback = false;
+    if (practiceState.correctCount >= 10) {
+      practiceComplete();
+    } else {
+      nextPracticeQuestion();
+    }
+  }, 1500);
+}
+
+function practiceOnWrong(q) {
+  practiceState.showingFeedback = true;
+  playSound('wrong');
+  const ov = document.getElementById('practice-overlay');
+  ov.innerHTML = '<span class="practice-wrong-msg">不正解！</span>';
+  ov.style.display = 'flex';
+  setTimeout(() => {
+    ov.style.display = 'none';
+    ov.innerHTML = '';
+    practiceState.showingFeedback = false;
+  }, 700);
+}
+
+function practiceComplete() {
+  const ov = document.getElementById('practice-overlay');
+  ov.innerHTML = '<span class="practice-complete-msg">練習完了！</span>';
+  ov.style.display = 'flex';
+  playSound('result');
+  setTimeout(() => showHelp(), 2000);
+}
+
+function exitPractice() {
+  showHelp();
+}
+
+// ========================
 // SOUND (Web Audio API)
 // ========================
 let soundEnabled = true;
@@ -2836,6 +3217,12 @@ function playSound(type) {
         [1047, 1319, 1568].forEach((f, i) =>
           playTone(ctx, f, 0.5, 'sine', 0.15, 0.44 + i * 0.01, 0.02, 0.5)
         );
+        break;
+
+      case 'wrong':
+        // 不正解: short descending buzz
+        playTone(ctx, 280, 0.15, 'sawtooth', 0.22, 0,    0.005, 0.14);
+        playTone(ctx, 220, 0.12, 'sawtooth', 0.18, 0.06, 0.005, 0.12);
         break;
 
       case 'dot-place':
