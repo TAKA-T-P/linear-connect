@@ -888,6 +888,42 @@ canvas {
 .practice-btns-wrap {
   padding: 4px 8px 10px;
   flex-shrink: 0;
+  position: relative;
+}
+.practice-hint-popup {
+  display: none;
+  position: absolute;
+  bottom: calc(100% - 4px);
+  right: 8px;
+  background: var(--panel);
+  border: 1.5px solid #ff9500;
+  border-radius: 10px;
+  padding: 10px 14px;
+  z-index: 20;
+  min-width: 210px;
+  box-shadow: 0 -4px 18px rgba(0,0,0,0.35);
+}
+.practice-hint-popup-line1 {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 5px;
+}
+.practice-hint-popup-line2 {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+.ans-btn.practice-hint-btn {
+  background: #c96b00;
+  color: #fff;
+  font-weight: 700;
+  border-color: #ff9500;
+}
+#practice-val-display {
+  display: inline-block;
+  min-width: 2em;
+  text-align: center;
 }
 .practice-launch-btn {
   display: block;
@@ -1200,16 +1236,13 @@ canvas {
     <span class="practice-title-text">傾きを読み取る練習</span>
     <button class="practice-exit-btn" onclick="exitPractice()">終了</button>
   </div>
-  <div class="practice-hint-area">
-    <div class="practice-hint-line1">傾きは<span class="math-frac" style="font-size:1.35em;vertical-align:middle;font-weight:900"><span class="numer">縦</span><span class="denom">横</span></span>で求めるよ！</div>
-    <div class="practice-hint-line2" id="practice-hint-dir"></div>
-  </div>
   <div id="practice-canvas-area">
     <canvas id="practice-canvas"></canvas>
     <div class="practice-overlay" id="practice-overlay"></div>
   </div>
   <div class="practice-desc" id="practice-desc"></div>
   <div class="practice-btns-wrap">
+    <div id="practice-hint-popup" class="practice-hint-popup"></div>
     <div class="answer-btns-grid" id="practice-btns"></div>
   </div>
 </div>
@@ -2967,11 +3000,9 @@ function nextPracticeQuestion() {
   graphCanvas = pc; graphCtx = pc.getContext('2d');
   drawGrid(true);
   drawLine(q.aNumer, q.aDenom, q.b, state.graphLineColor);
-  // Update direction hint
-  const hintDir = document.getElementById('practice-hint-dir');
-  if (hintDir) hintDir.textContent = q.aNumer > 0
-    ? 'グラフが右上がりなので傾きは正！'
-    : 'グラフが右下がりなので傾きは負！';
+  // Close hint popup on new question
+  const popup = document.getElementById('practice-hint-popup');
+  if (popup) popup.style.display = 'none';
   // Dots first, then arrows (arrows drawn on top)
   const c1 = toCanvas(0, q.b);
   const cm = toCanvas(q.aDenom, q.b);
@@ -3011,8 +3042,9 @@ function buildPracticeButtons() {
     {label:'←', val:'back', cls:'edit operator-btn'},
     {label:'1', val:'1'}, {label:'2', val:'2'}, {label:'3', val:'3'}, {label:'4', val:'4'},
     {label:'消去', val:'clear', cls:'edit'},
-    {label:'+', val:'+', cls:'special operator-btn x-wide'},
-    {label:'−', val:'-', cls:'special operator-btn x-wide'},
+    {label:'+', val:'+', cls:'special operator-btn'},
+    {label:'−', val:'-', cls:'special operator-btn'},
+    {label:'ヒント', val:'hint', cls:'practice-hint-btn x-wide'},
   ];
   container.innerHTML = buttons.map(b =>
     `<button class="ans-btn ${b.cls||''}" onclick="practicePress('${b.val}')">${b.label}</button>`
@@ -3036,7 +3068,24 @@ function parseSlopeInput(tokens) {
   return { aNumer, aDenom };
 }
 
+function togglePracticeHint() {
+  const popup = document.getElementById('practice-hint-popup');
+  if (!popup) return;
+  if (popup.style.display === 'block') { popup.style.display = 'none'; return; }
+  const q = practiceState.question;
+  if (!q) return;
+  const dir = q.aNumer > 0 ? '右上がり' : '右下がり';
+  const sign = q.aNumer > 0 ? '正' : '負';
+  popup.innerHTML =
+    '<div class="practice-hint-popup-line1">傾きは' +
+    '<span class="math-frac" style="font-size:1.15em;vertical-align:middle;font-weight:900">' +
+    '<span class="numer">縦</span><span class="denom">横</span></span>で求めるよ！</div>' +
+    `<div class="practice-hint-popup-line2">グラフが${dir}なので傾きは${sign}！</div>`;
+  popup.style.display = 'block';
+}
+
 function practicePress(val) {
+  if (val === 'hint') { togglePracticeHint(); return; }
   if (practiceState.showingFeedback) return;
   if (val === 'clear') {
     practiceState.input = [];
@@ -3244,6 +3293,15 @@ document.addEventListener('pointerdown', function(e) {
   const btn = e.target.closest('button, .mode-btn, .toggle-btn');
   if (btn) playSound('btn');
 }, { capture: true });
+
+// Close practice hint popup when tapping outside it
+document.addEventListener('pointerdown', function(e) {
+  const popup = document.getElementById('practice-hint-popup');
+  if (!popup || popup.style.display !== 'block') return;
+  if (!popup.contains(e.target) && !e.target.closest('.practice-hint-btn')) {
+    popup.style.display = 'none';
+  }
+});
 </script>
 </body>
 </html>
