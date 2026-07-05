@@ -1046,7 +1046,7 @@ canvas {
       <div class="stat-value" id="result-correct">0</div>
     </div>
     <div class="stat-card">
-      <div class="stat-label">最大コンボ</div>
+      <div class="stat-label" id="result-maxcombo-label">最大コンボ</div>
       <div class="stat-value" id="result-maxcombo">0</div>
     </div>
   </div>
@@ -1908,7 +1908,17 @@ function showResult() {
 
   document.getElementById('result-score').textContent = state.score.toLocaleString();
   document.getElementById('result-correct').textContent = state.correctCount;
-  document.getElementById('result-maxcombo').textContent = state.maxCombo;
+  if (state.timeLimit === 'challenge') {
+    const sec = state.timerRemaining;
+    const playTimeStr = sec >= 60
+      ? `${Math.floor(sec / 60)}分${String(sec % 60).padStart(2, '0')}秒`
+      : `${sec}秒`;
+    document.getElementById('result-maxcombo-label').textContent = 'プレイ時間';
+    document.getElementById('result-maxcombo').textContent = playTimeStr;
+  } else {
+    document.getElementById('result-maxcombo-label').textContent = '最大コンボ';
+    document.getElementById('result-maxcombo').textContent = state.maxCombo;
+  }
   document.getElementById('result-avgtime').textContent = avgTime === '--' ? '--' : avgTime + '秒';
   document.getElementById('result-rank').textContent = rank;
 
