@@ -2085,9 +2085,8 @@ function showResult() {
   const baseRank = calcRank(state.correctCount > 0 ? parseFloat(avgTime) : null);
   let rankSuffix = '';
   if (state.timeLimit === 'challenge') {
-    const playedSec = state.timerRemaining; // count-up value = elapsed seconds
-    if (playedSec >= 180) rankSuffix = '★';
-    else if (playedSec >= 90) rankSuffix = '＋';
+    if (state.correctCount >= 50) rankSuffix = '★';
+    else if (state.correctCount >= 25) rankSuffix = '＋';
   } else if (state.timeLimit === 180) {
     rankSuffix = '＋';
   }
