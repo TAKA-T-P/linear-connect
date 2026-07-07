@@ -1264,26 +1264,7 @@ canvas {
       <p class="help-text">制限時間内にできるだけ多く正解して、高スコアを目指しましょう！</p>
     </div>
 
-    <!-- 2. アンサーモード -->
-    <div class="help-card">
-      <div class="help-card-title">✏️ アンサーモード</div>
-      <p class="help-text">グラフを見て、一次関数の式をボタンで入力して答えます。</p>
-      <p class="help-text">画面には最初から「<span class="math-var">y</span> =」が表示されています。</p>
-      <div class="help-ex-box">
-        <div class="help-ex-title">入力例：答えが <span class="math-var">y</span> = <span class="math-frac" style="font-size:0.9em"><span class="numer">2</span><span class="denom">3</span></span><span class="math-var">x</span> + 1 のとき</div>
-        <p class="help-text">「<span class="help-em"><span class="math-frac"><span class="numer">2</span><span class="denom">3</span></span></span>」→「<span class="help-em"><span class="math-var">x</span></span>」→「<span class="help-em">+</span>」→「<span class="help-em">1</span>」の順にボタンを押す</p>
-      </div>
-      <div class="help-point">
-        <span class="help-label">傾きが ±1 のとき</span>
-        <p>数字を押さず「<span class="math-var">x</span>」だけ押せば OK（係数1は省略できます）</p>
-      </div>
-      <div class="help-point">
-        <span class="help-label">←ボタン</span>
-        <p>直前の入力を1つ取り消します。「消去」で全部消えます。</p>
-      </div>
-    </div>
-
-    <!-- 3. コネクトモード -->
+    <!-- 2. コネクトモード -->
     <div class="help-card">
       <div class="help-card-title">🔗 コネクトモード</div>
       <p class="help-text">表示された式に合う直線を、座標平面上に引くモードです。</p>
@@ -1301,6 +1282,25 @@ canvas {
         <span class="help-label">点の操作</span>
         <p>同じ点をもう一度タップ → その点を消せます。</p>
         <p>「点を消す」ボタン → 打った点をすべて消します。</p>
+      </div>
+    </div>
+
+    <!-- 3. アンサーモード -->
+    <div class="help-card">
+      <div class="help-card-title">✏️ アンサーモード</div>
+      <p class="help-text">グラフを見て、一次関数の式をボタンで入力して答えます。</p>
+      <p class="help-text">画面には最初から「<span class="math-var">y</span> =」が表示されています。</p>
+      <div class="help-ex-box">
+        <div class="help-ex-title">入力例：答えが <span class="math-var">y</span> = <span class="math-frac" style="font-size:1.3em;vertical-align:middle"><span class="numer">2</span><span class="denom">3</span></span><span class="math-var">x</span> + 1 のとき</div>
+        <p class="help-text">「<span class="help-em"><span class="math-frac"><span class="numer">2</span><span class="denom">3</span></span></span>」→「<span class="help-em"><span class="math-var">x</span></span>」→「<span class="help-em">+</span>」→「<span class="help-em">1</span>」の順にボタンを押す</p>
+      </div>
+      <div class="help-point">
+        <span class="help-label">傾きが ±1 のとき</span>
+        <p>数字を押さず「<span class="math-var">x</span>」だけ押せば OK（係数1は省略できます）</p>
+      </div>
+      <div class="help-point">
+        <span class="help-label">←ボタン</span>
+        <p>直前の入力を1つ取り消します。「消去」で全部消えます。</p>
       </div>
     </div>
 
@@ -1351,7 +1351,7 @@ canvas {
         <p class="help-text">(0, 3) から (2, 4) へ：右に <span class="help-em">2</span>、上に <span class="help-em">1</span>
         　→ 傾き = <span class="math-frac" style="font-size:1em"><span class="numer">1</span><span class="denom">2</span></span></p>
         <p class="help-text">　よって　<span class="help-em"><span class="math-var">y</span> = <span class="math-frac" style="font-size:1em"><span class="numer">1</span><span class="denom">2</span></span><span class="math-var">x</span> + 3</span></p>
-        <canvas id="help-cv-linear" width="260" height="210" style="display:block;margin:10px auto 0;border-radius:8px;"></canvas>
+        <canvas id="help-cv-linear" width="260" height="234" style="display:block;margin:10px auto 0;border-radius:8px;"></canvas>
       </div>
     </div>
 
@@ -2888,9 +2888,57 @@ function drawHelpPropGraph() {
 function drawHelpLinearGraph() {
   const canvas = document.getElementById('help-cv-linear');
   if (!canvas) return;
-  const {ctx, toC, cellPx} = drawHelpGraphBase(canvas, 4);
+  const sz = canvas.width;   // 260
+  const sh = canvas.height;  // 234
+  const ctx = canvas.getContext('2d');
+  // y range: -3 to 5 (8 units), x range: -4 to 4 (8 units)
+  const cellPx = sz / 10;           // 26 (same scale as prop graph)
+  const ox = sz / 2;                // 130
+  const oy = sh - 3.5 * cellPx;    // 234 - 91 = 143  (y=5 at top, y=-3 at bottom)
+  const toC = (gx, gy) => ({ cx: ox + gx * cellPx, cy: oy - gy * cellPx });
 
-  // y = 1/2 x + 3
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, sz, sh);
+
+  // Grid lines
+  ctx.strokeStyle = '#e0e0e0'; ctx.lineWidth = 0.8;
+  for (let gx = -4; gx <= 4; gx++) {
+    const {cx} = toC(gx, 0);
+    ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx, sh); ctx.stroke();
+  }
+  for (let gy = -3; gy <= 5; gy++) {
+    const {cy} = toC(0, gy);
+    ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(sz, cy); ctx.stroke();
+  }
+
+  // Axes
+  ctx.strokeStyle = '#000'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(0, oy); ctx.lineTo(sz, oy); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(ox, 0); ctx.lineTo(ox, sh); ctx.stroke();
+
+  // Tick marks & labels
+  const fs = Math.round(cellPx * 0.56);
+  ctx.fillStyle = '#444'; ctx.font = `${fs}px monospace`;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  for (let gx = -4; gx <= 4; gx++) {
+    if (gx === 0) continue;
+    const {cx} = toC(gx, 0);
+    ctx.strokeStyle = '#000'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(cx, oy-3); ctx.lineTo(cx, oy+3); ctx.stroke();
+    ctx.fillText(gx, cx, oy + 5);
+  }
+  ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+  for (let gy = -3; gy <= 5; gy++) {
+    if (gy === 0) continue;
+    const {cy} = toC(0, gy);
+    ctx.strokeStyle = '#000'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(ox-3, cy); ctx.lineTo(ox+3, cy); ctx.stroke();
+    ctx.fillText(gy, ox - 5, cy);
+  }
+  ctx.fillStyle = '#666'; ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+  ctx.fillText('O', ox - 4, oy + 4);
+
+  // y = 1/2 x + 3 (line from x=-5 to x=5)
   const {cx: lx1, cy: ly1} = toC(-5, 0.5);
   const {cx: lx2, cy: ly2} = toC(5, 5.5);
   ctx.strokeStyle = '#0044cc'; ctx.lineWidth = 2.5;
@@ -2899,11 +2947,9 @@ function drawHelpLinearGraph() {
   // Point (0, 3) — y-intercept
   const {cx: p0x, cy: p3y} = toC(0, 3);
   drawDot(ctx, p0x, p3y, '#cc2200');
-  // Emphasis ring
   ctx.strokeStyle = '#cc2200'; ctx.lineWidth = 1.8; ctx.setLineDash([3,2]);
   ctx.beginPath(); ctx.arc(p0x, p3y, 9, 0, Math.PI*2); ctx.stroke();
   ctx.setLineDash([]);
-  // Label "切片3" — left of y-axis
   ctx.fillStyle = '#cc2200'; ctx.font = `bold ${Math.round(cellPx*0.62)}px sans-serif`;
   ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
   ctx.fillText('切片3', p0x - 12, p3y);
