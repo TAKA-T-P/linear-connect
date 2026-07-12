@@ -2088,7 +2088,7 @@ function showResult() {
     if (state.correctCount >= 50) rankSuffix = '★';
     else if (state.correctCount >= 25) rankSuffix = '＋';
   } else if (state.timeLimit === 180) {
-    rankSuffix = '＋';
+    rankSuffix = state.maxCombo >= 50 ? '★' : '＋';
   }
   const rankWithSuffix = baseRank + rankSuffix;
   const rank = state.hardMode ? 'HARD ' + rankWithSuffix : rankWithSuffix;
