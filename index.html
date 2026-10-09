@@ -1055,6 +1055,28 @@ canvas {
   font-size: 1.15em;
   vertical-align: middle;
 }
+.help-section { display: none; }
+.help-section.active { display: block; }
+.help-menu-btn {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 16px 14px;
+  margin-bottom: 12px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  color: var(--text);
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+}
+.help-menu-btn:active { background: rgba(0,212,255,0.12); }
+.help-menu-link { border-left-color: var(--gold); }
 .help-back-bottom-btn {
   width: 100%;
   padding: 13px;
@@ -1255,108 +1277,148 @@ canvas {
   </div>
   <div class="help-body">
 
-    <button class="practice-launch-btn" onclick="startPractice()">▶ 傾きを読み取る練習</button>
-
-    <!-- 1. ゲームの遊び方 -->
-    <div class="help-card">
-      <div class="help-card-title">🎮 ゲームの遊び方</div>
-      <p class="help-text">比例・一次関数のグラフをすばやく読み取る練習ゲームです。</p>
-      <p class="help-text">制限時間内にできるだけ多く正解して、高スコアを目指しましょう！</p>
+    <!-- HELP MENU -->
+    <div id="help-menu" class="help-section active">
+      <button class="help-menu-btn" onclick="showHelpSection('game')">🎮 ゲームの遊び方</button>
+      <button class="help-menu-btn" onclick="showHelpSection('prop')">📈 比例のグラフの読み取り方</button>
+      <button class="help-menu-btn" onclick="showHelpSection('linear')">📉 一次関数のグラフの読み取り方</button>
+      <button class="help-menu-btn" onclick="showHelpSection('practice')">✍️ 傾きを読み取る練習</button>
+      <a class="help-menu-btn help-menu-link" href="https://taka-t-p.github.io/math-app-portal/">🔬 KEC数学科ラボへ</a>
+      <button class="help-back-bottom-btn" onclick="showScreen('title-screen')">タイトルに戻る</button>
     </div>
 
-    <!-- 2. コネクトモード -->
-    <div class="help-card">
-      <div class="help-card-title">🔗 コネクトモード</div>
-      <p class="help-text">表示された式に合う直線を、座標平面上に引くモードです。</p>
-      <div class="help-point">
-        <span class="help-label">一次関数モード</span>
-        <p>直線上の<span class="help-em">2つの格子点</span>をタップします。</p>
-        <p>その2点を通る直線が問題の式と一致すれば正解です。</p>
+    <div id="help-sec-game" class="help-section">
+      <!-- 1. ゲームの遊び方 -->
+      <div class="help-card">
+        <div class="help-card-title">🎮 ゲームの遊び方</div>
+        <p class="help-text">比例・一次関数のグラフをすばやく読み取る練習ゲームです。</p>
+        <p class="help-text">制限時間内にできるだけ多く正解して、高スコアを目指しましょう！</p>
       </div>
-      <div class="help-point">
-        <span class="help-label">比例モード</span>
-        <p>原点 (0, 0) は最初から固定されています。</p>
-        <p>原点以外の<span class="help-em">1点</span>をタップするだけで直線を引けます。</p>
+
+      <!-- 2. コネクトモード -->
+      <div class="help-card">
+        <div class="help-card-title">🔗 コネクトモード</div>
+        <p class="help-text">表示された式に合う直線を、座標平面上に引くモードです。</p>
+        <div class="help-point">
+          <span class="help-label">一次関数モード</span>
+          <p>直線上の<span class="help-em">2つの格子点</span>をタップします。</p>
+          <p>その2点を通る直線が問題の式と一致すれば正解です。</p>
+        </div>
+        <div class="help-point">
+          <span class="help-label">比例モード</span>
+          <p>原点 (0, 0) は最初から固定されています。</p>
+          <p>原点以外の<span class="help-em">1点</span>をタップするだけで直線を引けます。</p>
+        </div>
+        <div class="help-point">
+          <span class="help-label">点の操作</span>
+          <p>同じ点をもう一度タップ → その点を消せます。</p>
+          <p>「点を消す」ボタン → 打った点をすべて消します。</p>
+        </div>
       </div>
-      <div class="help-point">
-        <span class="help-label">点の操作</span>
-        <p>同じ点をもう一度タップ → その点を消せます。</p>
-        <p>「点を消す」ボタン → 打った点をすべて消します。</p>
+
+      <!-- 3. アンサーモード -->
+      <div class="help-card">
+        <div class="help-card-title">✏️ アンサーモード</div>
+        <p class="help-text">グラフを見て、一次関数の式をボタンで入力して答えます。</p>
+        <p class="help-text">画面には最初から「<span class="math-var">y</span> =」が表示されています。</p>
+        <div class="help-ex-box">
+          <div class="help-ex-title">入力例：答えが <span class="math-var">y</span> = <span class="math-frac" style="font-size:1.3em;vertical-align:middle"><span class="numer">2</span><span class="denom">3</span></span><span class="math-var">x</span> + 1 のとき</div>
+          <p class="help-text">「<span class="help-em"><span class="math-frac"><span class="numer">2</span><span class="denom">3</span></span></span>」→「<span class="help-em"><span class="math-var">x</span></span>」→「<span class="help-em">+</span>」→「<span class="help-em">1</span>」の順にボタンを押す</p>
+        </div>
+        <div class="help-point">
+          <span class="help-label">傾きが ±1 のとき</span>
+          <p>数字を押さず「<span class="math-var">x</span>」だけ押せば OK（係数1は省略できます）</p>
+        </div>
+        <div class="help-point">
+          <span class="help-label">←ボタン</span>
+          <p>直前の入力を1つ取り消します。「消去」で全部消えます。</p>
+        </div>
       </div>
+
+      <button class="help-back-bottom-btn" onclick="showHelpMenu()">← ヘルプメニューに戻る</button>
     </div>
 
-    <!-- 3. アンサーモード -->
-    <div class="help-card">
-      <div class="help-card-title">✏️ アンサーモード</div>
-      <p class="help-text">グラフを見て、一次関数の式をボタンで入力して答えます。</p>
-      <p class="help-text">画面には最初から「<span class="math-var">y</span> =」が表示されています。</p>
-      <div class="help-ex-box">
-        <div class="help-ex-title">入力例：答えが <span class="math-var">y</span> = <span class="math-frac" style="font-size:1.3em;vertical-align:middle"><span class="numer">2</span><span class="denom">3</span></span><span class="math-var">x</span> + 1 のとき</div>
-        <p class="help-text">「<span class="help-em"><span class="math-frac"><span class="numer">2</span><span class="denom">3</span></span></span>」→「<span class="help-em"><span class="math-var">x</span></span>」→「<span class="help-em">+</span>」→「<span class="help-em">1</span>」の順にボタンを押す</p>
+    <div id="help-sec-prop" class="help-section">
+      <!-- 4. 比例のグラフ -->
+      <div class="help-card">
+        <div class="help-card-title">📈 比例のグラフの読み取り方</div>
+        <p class="help-text">比例の式は <span class="help-em"><span class="math-var">y</span> = <span class="math-var">a</span><span class="math-var">x</span></span> の形です。</p>
+        <p class="help-text"><span class="math-var">a</span> を<span class="help-em">比例定数（傾き）</span>といいます。</p>
+        <p class="help-text">比例のグラフは、<span class="help-em">必ず原点 (0, 0) を通ります。</span></p>
+        <div class="help-step">
+          <div class="help-step-num">1</div>
+          <p>原点から別の格子点へ「右にいくつ」「上にいくつ」進むかを数える</p>
+        </div>
+        <div class="help-step">
+          <div class="help-step-num">2</div>
+          <p>傾き = （上への移動量）÷（右への移動量）</p>
+        </div>
+        <div class="help-ex-box">
+          <div class="help-ex-title">例：原点と点 (3, 2) を通る直線</div>
+          <p class="help-text">右に <span class="help-em">3</span>、上に <span class="help-em">2</span> 進む
+          　→ 傾き = <span class="math-frac" style="font-size:1em"><span class="numer">2</span><span class="denom">3</span></span>
+          　なので　<span class="help-em"><span class="math-var">y</span> = <span class="math-frac" style="font-size:1em"><span class="numer">2</span><span class="denom">3</span></span><span class="math-var">x</span></span></p>
+          <canvas id="help-cv-prop" width="260" height="210" style="display:block;margin:10px auto 0;border-radius:8px;"></canvas>
+        </div>
       </div>
-      <div class="help-point">
-        <span class="help-label">傾きが ±1 のとき</span>
-        <p>数字を押さず「<span class="math-var">x</span>」だけ押せば OK（係数1は省略できます）</p>
-      </div>
-      <div class="help-point">
-        <span class="help-label">←ボタン</span>
-        <p>直前の入力を1つ取り消します。「消去」で全部消えます。</p>
-      </div>
+
+      <button class="help-back-bottom-btn" onclick="showHelpMenu()">← ヘルプメニューに戻る</button>
     </div>
 
-    <!-- 4. 比例のグラフ -->
-    <div class="help-card">
-      <div class="help-card-title">📈 比例のグラフの読み取り方</div>
-      <p class="help-text">比例の式は <span class="help-em"><span class="math-var">y</span> = <span class="math-var">a</span><span class="math-var">x</span></span> の形です。</p>
-      <p class="help-text"><span class="math-var">a</span> を<span class="help-em">比例定数（傾き）</span>といいます。</p>
-      <p class="help-text">比例のグラフは、<span class="help-em">必ず原点 (0, 0) を通ります。</span></p>
-      <div class="help-step">
-        <div class="help-step-num">1</div>
-        <p>原点から別の格子点へ「右にいくつ」「上にいくつ」進むかを数える</p>
+    <div id="help-sec-linear" class="help-section">
+      <!-- 5. 一次関数のグラフ -->
+      <div class="help-card">
+        <div class="help-card-title">📉 一次関数のグラフの読み取り方</div>
+        <p class="help-text">一次関数の式は <span class="help-em"><span class="math-var">y</span> = <span class="math-var">a</span><span class="math-var">x</span> + <span class="math-var">b</span></span> の形です。</p>
+        <p class="help-text"><span class="math-var">a</span> が<span class="help-em">傾き</span>、<span class="math-var">b</span> が<span class="help-em">切片</span>です。</p>
+        <div class="help-step">
+          <div class="help-step-num">1</div>
+          <p><span class="help-em">切片</span>を読む：グラフが <span class="math-var">y</span> 軸と交わる点の <span class="math-var">y</span> 座標</p>
+        </div>
+        <div class="help-step">
+          <div class="help-step-num">2</div>
+          <p><span class="help-em">傾き</span>を読む：その点から別の格子点への「右に○、上に○」を数える</p>
+        </div>
+        <div class="help-point">
+          <span class="help-label">傾きの考え方</span>
+          <p>右に3進んで上に2進む → 傾き = <span class="math-frac" style="font-size:0.95em"><span class="numer">2</span><span class="denom">3</span></span></p>
+          <p>右に1進んで下に3進む → 傾き = <span class="help-em">−3</span></p>
+        </div>
+        <div class="help-ex-box">
+          <div class="help-ex-title">例：点 (0, 3) と点 (2, 4) を通る直線</div>
+          <p class="help-text"><span class="math-var">y</span> 軸との交点 (0, 3) → <span class="help-em">切片 = 3</span></p>
+          <p class="help-text">(0, 3) から (2, 4) へ：右に <span class="help-em">2</span>、上に <span class="help-em">1</span>
+          　→ 傾き = <span class="math-frac" style="font-size:1em"><span class="numer">1</span><span class="denom">2</span></span></p>
+          <p class="help-text">　よって　<span class="help-em"><span class="math-var">y</span> = <span class="math-frac" style="font-size:1em"><span class="numer">1</span><span class="denom">2</span></span><span class="math-var">x</span> + 3</span></p>
+          <canvas id="help-cv-linear" width="260" height="234" style="display:block;margin:10px auto 0;border-radius:8px;"></canvas>
+        </div>
       </div>
-      <div class="help-step">
-        <div class="help-step-num">2</div>
-        <p>傾き = （上への移動量）÷（右への移動量）</p>
-      </div>
-      <div class="help-ex-box">
-        <div class="help-ex-title">例：原点と点 (3, 2) を通る直線</div>
-        <p class="help-text">右に <span class="help-em">3</span>、上に <span class="help-em">2</span> 進む
-        　→ 傾き = <span class="math-frac" style="font-size:1em"><span class="numer">2</span><span class="denom">3</span></span>
-        　なので　<span class="help-em"><span class="math-var">y</span> = <span class="math-frac" style="font-size:1em"><span class="numer">2</span><span class="denom">3</span></span><span class="math-var">x</span></span></p>
-        <canvas id="help-cv-prop" width="260" height="210" style="display:block;margin:10px auto 0;border-radius:8px;"></canvas>
-      </div>
+
+      <button class="help-back-bottom-btn" onclick="showHelpMenu()">← ヘルプメニューに戻る</button>
     </div>
 
-    <!-- 5. 一次関数のグラフ -->
-    <div class="help-card">
-      <div class="help-card-title">📉 一次関数のグラフの読み取り方</div>
-      <p class="help-text">一次関数の式は <span class="help-em"><span class="math-var">y</span> = <span class="math-var">a</span><span class="math-var">x</span> + <span class="math-var">b</span></span> の形です。</p>
-      <p class="help-text"><span class="math-var">a</span> が<span class="help-em">傾き</span>、<span class="math-var">b</span> が<span class="help-em">切片</span>です。</p>
-      <div class="help-step">
-        <div class="help-step-num">1</div>
-        <p><span class="help-em">切片</span>を読む：グラフが <span class="math-var">y</span> 軸と交わる点の <span class="math-var">y</span> 座標</p>
+    <div id="help-sec-practice" class="help-section">
+      <div class="help-card">
+        <div class="help-card-title">✍️ 傾きを読み取る練習</div>
+        <p class="help-text">グラフ上の2点の間を「右にいくつ」「上（下）にいくつ」進むかを見て、<span class="help-em">傾き</span>を答える練習です。</p>
+        <div class="help-step">
+          <div class="help-step-num">1</div>
+          <p>グラフに表示された矢印で、横と縦の移動量を確認する</p>
+        </div>
+        <div class="help-step">
+          <div class="help-step-num">2</div>
+          <p>傾き = <span class="math-frac" style="font-size:0.95em"><span class="numer">縦</span><span class="denom">横</span></span> をボタンで入力する（下に進むときは「−」をつける）</p>
+        </div>
+        <div class="help-point">
+          <span class="help-label">ヒント</span>
+          <p>わからないときは「ヒント」ボタンを押してみよう。</p>
+        </div>
+        <p class="help-text">全部で<span class="help-em">10問</span>正解すると練習完了です。</p>
       </div>
-      <div class="help-step">
-        <div class="help-step-num">2</div>
-        <p><span class="help-em">傾き</span>を読む：その点から別の格子点への「右に○、上に○」を数える</p>
-      </div>
-      <div class="help-point">
-        <span class="help-label">傾きの考え方</span>
-        <p>右に3進んで上に2進む → 傾き = <span class="math-frac" style="font-size:0.95em"><span class="numer">2</span><span class="denom">3</span></span></p>
-        <p>右に1進んで下に3進む → 傾き = <span class="help-em">−3</span></p>
-      </div>
-      <div class="help-ex-box">
-        <div class="help-ex-title">例：点 (0, 3) と点 (2, 4) を通る直線</div>
-        <p class="help-text"><span class="math-var">y</span> 軸との交点 (0, 3) → <span class="help-em">切片 = 3</span></p>
-        <p class="help-text">(0, 3) から (2, 4) へ：右に <span class="help-em">2</span>、上に <span class="help-em">1</span>
-        　→ 傾き = <span class="math-frac" style="font-size:1em"><span class="numer">1</span><span class="denom">2</span></span></p>
-        <p class="help-text">　よって　<span class="help-em"><span class="math-var">y</span> = <span class="math-frac" style="font-size:1em"><span class="numer">1</span><span class="denom">2</span></span><span class="math-var">x</span> + 3</span></p>
-        <canvas id="help-cv-linear" width="260" height="234" style="display:block;margin:10px auto 0;border-radius:8px;"></canvas>
-      </div>
+      <button class="practice-launch-btn" onclick="startPractice()">▶ 練習をはじめる</button>
+      <button class="help-back-bottom-btn" onclick="showHelpMenu()">← ヘルプメニューに戻る</button>
     </div>
 
-    <button class="practice-launch-btn" onclick="startPractice()">▶ 傾きを読み取る練習</button>
-    <button class="help-back-bottom-btn" onclick="showScreen('title-screen')">タイトルに戻る</button>
   </div>
 </div>
 
@@ -2772,10 +2834,24 @@ function clearPoints() {
 // ========================
 function showHelp() {
   showScreen('help-screen');
-  requestAnimationFrame(() => {
-    drawHelpPropGraph();
-    drawHelpLinearGraph();
+  showHelpMenu();
+}
+
+function setHelpSection(id) {
+  document.querySelectorAll('#help-screen .help-section').forEach(el => {
+    el.classList.toggle('active', el.id === id);
   });
+  document.querySelector('#help-screen .help-body').scrollTop = 0;
+}
+
+function showHelpMenu() {
+  setHelpSection('help-menu');
+}
+
+function showHelpSection(name) {
+  setHelpSection('help-sec-' + name);
+  if (name === 'prop') requestAnimationFrame(drawHelpPropGraph);
+  if (name === 'linear') requestAnimationFrame(drawHelpLinearGraph);
 }
 
 function drawHelpGraphBase(canvas, range) {
@@ -3205,11 +3281,12 @@ function practiceComplete() {
   ov.innerHTML = '<span class="practice-complete-msg">練習完了！</span>';
   ov.style.display = 'flex';
   playSound('result');
-  setTimeout(() => showHelp(), 2000);
+  setTimeout(() => { showHelp(); showHelpSection('practice'); }, 2000);
 }
 
 function exitPractice() {
   showHelp();
+  showHelpSection('practice');
 }
 
 // ========================
