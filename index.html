@@ -539,12 +539,23 @@ html, body {
 .ans-btn.frac-btn .math-frac .numer,
 .ans-btn.frac-btn .math-frac .denom { font-size: 0.92em; }
 .ans-btn.x-wide { grid-column: span 2; font-size: 20px; }
+/* ヒント②: buttons used in the answer glow softly */
+.ans-btn.hint-glow {
+  border-color: #ffd400;
+  animation: hintGlow 1.4s ease-in-out infinite alternate;
+}
+@keyframes hintGlow {
+  from { box-shadow: 0 0 4px rgba(255, 212, 0, 0.35); }
+  to   { box-shadow: 0 0 12px rgba(255, 212, 0, 0.75), inset 0 0 6px rgba(255, 212, 0, 0.25); }
+}
 .ans-btn.operator-btn { font-size: 19px; font-weight: 900; }
 
 /* ===== CONNECT MODE LAYOUT ===== */
+/* Top padding keeps the formula clear of the hint toast (the practice header is shorter) */
+#game-screen.practice-mode .connect-formula-area { padding-top: 28px; }
 .connect-formula-area {
   flex-shrink: 0;
-  padding: 10px 16px;
+  padding: 16px 16px 10px;
   background: var(--panel);
   border-bottom: 1px solid var(--border);
   display: flex;
@@ -898,6 +909,7 @@ canvas {
 
 /* ===== PRACTICE SCREEN ===== */
 #practice-screen {
+  position: relative;
   padding: 0;
   justify-content: flex-start;
   overflow-y: auto;
@@ -1015,30 +1027,6 @@ canvas {
   padding: 4px 8px 10px;
   flex-shrink: 0;
   position: relative;
-}
-.practice-hint-popup {
-  display: none;
-  position: absolute;
-  bottom: calc(100% - 4px);
-  right: 8px;
-  background: var(--panel);
-  border: 1.5px solid #ff9500;
-  border-radius: 10px;
-  padding: 10px 14px;
-  z-index: 20;
-  min-width: 210px;
-  box-shadow: 0 -4px 18px rgba(0,0,0,0.35);
-}
-.practice-hint-popup-line1 {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--accent);
-  margin-bottom: 5px;
-}
-.practice-hint-popup-line2 {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-dim);
 }
 .ans-btn.practice-hint-btn {
   background: #c96b00;
@@ -1384,6 +1372,8 @@ canvas {
 
 <!-- PRACTICE SCREEN -->
 <div id="practice-screen" class="screen">
+  <!-- Hint text toast (over the header) -->
+  <div class="hint-panel" id="practice-hint-toast" onclick="closePracticeHintToast()"></div>
   <div class="practice-header">
     <span class="practice-progress" id="practice-progress">0 / 10</span>
     <span class="practice-title-text">傾きを読み取る練習</span>
@@ -1395,7 +1385,6 @@ canvas {
   </div>
   <div class="practice-desc" id="practice-desc"></div>
   <div class="practice-btns-wrap">
-    <div id="practice-hint-popup" class="practice-hint-popup"></div>
     <div class="answer-btns-grid" id="practice-btns"></div>
   </div>
 </div>
@@ -2671,7 +2660,7 @@ function buildAnswerButtons() {
     {label:'<span class="math-var" style="font-family:\'Times New Roman\',serif;font-style:italic;font-weight:bold">x</span>', val:'x', cls:'special x-wide'},
   ];
   container.innerHTML = buttons.map(b =>
-    `<button class="ans-btn ${b.cls||''}" onclick="ansPress('${b.val}')">${b.label}</button>`
+    `<button class="ans-btn ${b.cls||''}" data-val="${b.val}" onclick="ansPress('${b.val}')">${b.label}</button>`
   ).join('');
 }
 
@@ -2845,6 +2834,23 @@ function resetHint() {
   if (area) area.innerHTML = '';
   const panel = document.getElementById('hint-panel');
   if (panel) { panel.classList.remove('visible'); panel.innerHTML = ''; }
+  updateAnswerButtonGlow();
+}
+
+// Answer mode, ヒント②: light up the buttons used in the answer (e.g. y = -2/3x + 1 → − 2/3 x + 1)
+function updateAnswerButtonGlow() {
+  const btns = document.querySelectorAll('#answer-btns .ans-btn');
+  const q = state.currentQuestion;
+  const vals = new Set();
+  if (state.mode === 'answer' && state.hintStage >= 2 && q) {
+    if (q.aNumer < 0) vals.add('-');
+    const n = Math.abs(q.aNumer);
+    if (q.aDenom !== 1) vals.add(`${n}/${q.aDenom}`);
+    else if (n !== 1) vals.add(String(n)); // coefficient 1 is omitted
+    vals.add('x');
+    if (q.b !== 0) { vals.add(q.b > 0 ? '+' : '-'); vals.add(String(Math.abs(q.b))); }
+  }
+  btns.forEach(btn => btn.classList.toggle('hint-glow', vals.has(btn.dataset.val)));
 }
 
 function showHintButton() {
@@ -2863,10 +2869,12 @@ function onHintPress() {
     state.hintStage = 0;
     closeHintToast();
     showHintButton();
+    updateAnswerButtonGlow();
     redrawGraph();
     return;
   }
   state.hintStage++;
+  updateAnswerButtonGlow();
   const panel = document.getElementById('hint-panel');
   if (panel) {
     panel.classList.remove('visible');
@@ -3642,7 +3650,8 @@ const practiceState = {
   question: null,
   input: [],
   correctCount: 0,
-  showingFeedback: false
+  showingFeedback: false,
+  hintOn: false
 };
 
 function startPractice() {
@@ -3704,9 +3713,7 @@ function nextPracticeQuestion() {
   graphCanvas = pc; graphCtx = pc.getContext('2d');
   drawGrid(true);
   drawLine(q.aNumer, q.aDenom, q.b, state.graphLineColor);
-  // Close hint popup on new question
-  const popup = document.getElementById('practice-hint-popup');
-  if (popup) popup.style.display = 'none';
+  resetPracticeHint();
   // Dots first, then arrows (arrows drawn on top)
   const c1 = toCanvas(0, q.b);
   const cm = toCanvas(q.aDenom, q.b);
@@ -3751,7 +3758,7 @@ function buildPracticeButtons() {
     {label:'ヒント', val:'hint', cls:'practice-hint-btn x-wide'},
   ];
   container.innerHTML = buttons.map(b =>
-    `<button class="ans-btn ${b.cls||''}" onclick="practicePress('${b.val}')">${b.label}</button>`
+    `<button class="ans-btn ${b.cls||''}" data-val="${b.val}" onclick="practicePress('${b.val}')">${b.label}</button>`
   ).join('');
 }
 
@@ -3772,20 +3779,49 @@ function parseSlopeInput(tokens) {
   return { aNumer, aDenom };
 }
 
+// ヒント toggles the hint: toast text from the top + glowing answer buttons (ヒント非表示 turns both off)
 function togglePracticeHint() {
-  const popup = document.getElementById('practice-hint-popup');
-  if (!popup) return;
-  if (popup.style.display === 'block') { popup.style.display = 'none'; return; }
   const q = practiceState.question;
   if (!q) return;
+  if (practiceState.hintOn) { resetPracticeHint(); return; }
+  practiceState.hintOn = true;
   const dir = q.aNumer > 0 ? '右上がり' : '右下がり';
   const sign = q.aNumer > 0 ? '正' : '負';
-  popup.innerHTML =
-    '<div class="practice-hint-popup-line1">傾きは' +
-    '<span class="math-frac" style="font-size:1.15em;vertical-align:middle;font-weight:900">' +
+  const toast = document.getElementById('practice-hint-toast');
+  toast.innerHTML =
+    '<div>傾きは<span class="math-frac" style="font-size:1.35em;vertical-align:middle;font-weight:900;margin:0 3px">' +
     '<span class="numer">縦</span><span class="denom">横</span></span>で求めるよ！</div>' +
-    `<div class="practice-hint-popup-line2">グラフが${dir}なので傾きは${sign}！</div>`;
-  popup.style.display = 'block';
+    `<div>グラフが${hintEm(dir)}なので傾きは${hintEm(sign)}！</div>` +
+    '<span class="hint-panel-close">×</span>';
+  toast.classList.remove('visible');
+  void toast.offsetWidth; // replay the slide-in
+  toast.classList.add('visible');
+  updatePracticeHintUI();
+}
+
+function resetPracticeHint() {
+  practiceState.hintOn = false;
+  closePracticeHintToast();
+  updatePracticeHintUI();
+}
+
+// Tap on the toast: hide the text (button glow stays)
+function closePracticeHintToast() {
+  document.getElementById('practice-hint-toast').classList.remove('visible');
+}
+
+// Button label + glow on the buttons used in the answer (e.g. −2/3 → − 2/3, 1 → 1)
+function updatePracticeHintUI() {
+  const q = practiceState.question;
+  const vals = new Set();
+  if (practiceState.hintOn && q) {
+    if (q.aNumer < 0) vals.add('-');
+    vals.add(q.aDenom === 1 ? String(Math.abs(q.aNumer)) : `${Math.abs(q.aNumer)}/${q.aDenom}`);
+  }
+  document.querySelectorAll('#practice-btns .ans-btn').forEach(btn => {
+    if (btn.dataset.val === 'hint') btn.textContent = practiceState.hintOn ? '非表示' : 'ヒント';
+    else btn.classList.toggle('hint-glow', vals.has(btn.dataset.val));
+  });
 }
 
 function practicePress(val) {
@@ -3999,14 +4035,6 @@ document.addEventListener('pointerdown', function(e) {
   if (btn) playSound('btn');
 }, { capture: true });
 
-// Close practice hint popup when tapping outside it
-document.addEventListener('pointerdown', function(e) {
-  const popup = document.getElementById('practice-hint-popup');
-  if (!popup || popup.style.display !== 'block') return;
-  if (!popup.contains(e.target) && !e.target.closest('.practice-hint-btn')) {
-    popup.style.display = 'none';
-  }
-});
 </script>
 </body>
 </html>
