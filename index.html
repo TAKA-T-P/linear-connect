@@ -441,23 +441,42 @@ html, body {
   align-items: center;
 }
 .hint-btn {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
   background: #ff9500;
   color: #fff;
   border: none;
-  border-radius: 8px;
-  padding: 4px 10px;
+  border-radius: 10px;
+  padding: 8px 14px;
+  min-height: 38px;
   cursor: pointer;
   white-space: nowrap;
   box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
-.hint-text {
-  font-size: 18px;
-  font-weight: 700;
-  color: #e65000;
-  white-space: nowrap;
-  font-family: sans-serif;
+.hint-btn.done {
+  background: #3a3f55;
+  color: #aab4cc;
+  cursor: default;
+  box-shadow: none;
+}
+
+/* Hint text panel (between graph and input/actions) */
+.hint-panel {
+  display: none;
+  flex-shrink: 0;
+  padding: 6px 12px;
+  background: rgba(255, 212, 0, 0.08);
+  border-top: 1px solid rgba(255, 212, 0, 0.35);
+  font-size: clamp(12px, 3.6vw, 14px);
+  font-weight: 600;
+  line-height: 1.55;
+  color: var(--text);
+  min-height: calc(1.55em * 3 + 12px);
+}
+.hint-panel.visible { display: block; }
+.hint-em {
+  color: #ffd400;
+  font-weight: 900;
 }
 
 .answer-btns-grid {
@@ -539,6 +558,14 @@ html, body {
   background: var(--panel);
   border-top: 1px solid var(--border);
   display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+}
+/* Space for the hint button is kept so 点を消す does not move when it appears */
+.connect-actions .hint-area {
+  margin-left: 0;
+  min-width: 120px;
   justify-content: center;
 }
 .clear-pts-btn {
@@ -1546,7 +1573,8 @@ const state = {
   isTimeUp: false,
   afterTimeUpTimeout: null,
   isPaused: false,     // true while correct-answer feedback is showing
-  hintTimeout: null,   // setTimeout handle for the 15-second hint trigger
+  hintTimeout: null,   // setTimeout handle for the 12-second hint trigger
+  hintStage: 0,        // 0: none, 1: ヒント①, 2: ヒント②
   currentQuestion: null,
   isSpecial: false,    // special (no-grid) question
   lastComboAtSpecialStart: 0,
@@ -1946,10 +1974,10 @@ function nextQuestion() {
   state.currentQuestion = q;
   state.questionStartTime = performance.now();
 
+  resetHint();
   if (state.mode === 'answer') {
     state.answerInput = [];
     renderAnswerMode();
-    startHintTimer();
   } else {
     state.wrongTapCount = 0;
     state.connectPoints = [];
@@ -1958,6 +1986,7 @@ function nextQuestion() {
     }
     renderConnectMode();
   }
+  startHintTimer();
 }
 
 // ========================
@@ -1965,8 +1994,8 @@ function nextQuestion() {
 // ========================
 function onCorrect() {
   if (state.timeLimit === 'practice') {
-    // 練習: no score/combo; wait for 次へ / 練習をやめる
-    clearHintTimer();
+    // 練習: no score/combo; wait for 次へ / 練習をやめる (hint stays until 次へ)
+    cancelHintTimeout();
     state.isPaused = true;
     playSound('correct');
     document.getElementById('practice-mode-popup').classList.add('visible');
@@ -1988,7 +2017,7 @@ function onCorrect() {
   // Flash effect on 5-combo milestones
   if (state.combo % 5 === 0) triggerScreenFlash();
 
-  clearHintTimer();
+  cancelHintTimeout(); // hint display is reset when the next question starts
 
   // Pause timer and gauge while feedback is shown
   state.isPaused = true;
@@ -2119,6 +2148,7 @@ function drawHardLinearAnswerGraph(q) {
     if (placeBottom) ly = Math.min(ly, sz - fs - margin);
     else             ly = Math.max(ly, fs + margin);
     ctx.fillText(label, lx, ly);
+    baseLabelRects.push({ x: placeRight ? lx : lx - tw, y: placeBottom ? ly : ly - fs, w: tw, h: fs });
   });
 }
 
@@ -2173,6 +2203,7 @@ function drawHardProportionAnswerGraph(q) {
     if (placeBottom) ly = Math.min(ly, canvasSize - fs - margin);
     else             ly = Math.max(ly, fs + margin);
     ctx.fillText(`(${pt.x}, ${pt.y})`, lx, ly);
+    baseLabelRects.push({ x: placeRight ? lx : lx - tw, y: placeBottom ? ly : ly - fs, w: tw, h: fs });
   }
 }
 
@@ -2219,7 +2250,7 @@ function hideFeedback() {
 // ========================
 function showResult() {
   hideFeedback();
-  clearHintTimer();
+  resetHint();
   document.getElementById('tap-warning-overlay').classList.remove('visible');
   stopTimer();
   stopGauge();
@@ -2317,7 +2348,7 @@ function retryGame() {
 
 function goTitle() {
   stopTimer(); stopGauge();
-  clearHintTimer();
+  resetHint();
   hidePracticeModePopup();
   showScreen('title-screen');
 }
@@ -2346,6 +2377,7 @@ function buildGameBody() {
       <div class="answer-graph-area" id="answer-graph-area">
         <canvas id="graph-canvas"></canvas>
       </div>
+      <div class="hint-panel" id="hint-panel"></div>
       <div class="answer-input-area">
         <div class="answer-display" id="answer-display">
           <span class="prefix"><span class="math-var" style="font-family:'Times New Roman',serif;font-style:italic;font-weight:bold">y</span>&nbsp;=&nbsp;</span>
@@ -2363,8 +2395,10 @@ function buildGameBody() {
       <div class="connect-graph-area" id="connect-graph-area">
         <canvas id="graph-canvas"></canvas>
       </div>
+      <div class="hint-panel" id="hint-panel"></div>
       <div class="connect-actions">
         <button class="clear-pts-btn" onclick="clearPoints()">点を消す</button>
+        <span class="hint-area" id="hint-area"></span>
       </div>`;
     // Attach canvas listeners once after DOM insertion
     setTimeout(() => {
@@ -2381,6 +2415,7 @@ function buildGameBody() {
 // GRAPH CANVAS
 // ========================
 let graphCanvas, graphCtx, cellSize, originX, originY, canvasSize;
+let baseLabelRects = []; // canvas rects of labels drawn by the base graph (hint labels avoid them)
 
 function initCanvas() {
   graphCanvas = document.getElementById('graph-canvas');
@@ -2521,6 +2556,12 @@ function drawLine(aNumer, aDenom, b, color) {
 
 function redrawGraph() {
   if (!graphCanvas) return;
+  baseLabelRects = [];
+  drawBaseGraph();
+  if (state.hintStage > 0) renderHint();
+}
+
+function drawBaseGraph() {
   const q = state.currentQuestion;
 
   // Hard answer+proportion: special display (no labels, just axes + line + point)
@@ -2721,32 +2762,384 @@ function renderAnswerMode() {
   redrawGraph();
 }
 
+// ========================
+// HINT (2 stages, answer & connect)
+// ========================
+// The hint button appears 12s after the question starts (練習: immediately).
+// Stage 1 / stage 2 add a short text panel and marks on the graph; they never answer for the player.
 function startHintTimer() {
-  clearHintTimer();
-  state.hintTimeout = setTimeout(() => {
-    const el = document.getElementById('hint-area');
-    if (el) el.innerHTML = '<button class="hint-btn" onclick="onHintPress()">ヒント</button>';
-  }, 12000);
+  cancelHintTimeout();
+  if (state.timeLimit === 'practice') { showHintButton(); return; }
+  state.hintTimeout = setTimeout(showHintButton, 12000);
 }
 
-function clearHintTimer() {
+function cancelHintTimeout() {
   if (state.hintTimeout) { clearTimeout(state.hintTimeout); state.hintTimeout = null; }
-  const el = document.getElementById('hint-area');
-  if (el) el.innerHTML = '';
+}
+
+// Back to "no hint": no button, no panel, no marks (next redraw)
+function resetHint() {
+  cancelHintTimeout();
+  state.hintStage = 0;
+  const area = document.getElementById('hint-area');
+  if (area) area.innerHTML = '';
+  const panel = document.getElementById('hint-panel');
+  if (panel) { panel.classList.remove('visible'); panel.innerHTML = ''; }
+}
+
+function showHintButton() {
+  state.hintTimeout = null;
+  const area = document.getElementById('hint-area');
+  if (!area) return;
+  const done = state.hintStage >= 2;
+  const label = ['ヒント', '次のヒント', 'ヒント表示中'][state.hintStage];
+  area.innerHTML = `<button class="hint-btn${done ? ' done' : ''}" onclick="onHintPress()"${done ? ' disabled' : ''}>${label}</button>`;
 }
 
 function onHintPress() {
-  const el = document.getElementById('hint-area');
-  if (!el) return;
-  const q = state.currentQuestion;
-  let slopeHtml;
-  if (q.aDenom === 1) {
-    slopeHtml = String(q.aNumer);
-  } else {
-    const sign = q.aNumer < 0 ? '−' : '';
-    slopeHtml = `${sign}<span class="math-frac" style="font-size:1em"><span class="numer">${Math.abs(q.aNumer)}</span><span class="denom">${q.aDenom}</span></span>`;
+  if (state.isPaused || state.hintStage >= 2) return;
+  state.hintStage++;
+  showHintButton();
+  const panel = document.getElementById('hint-panel');
+  if (panel) {
+    renderHintText(buildHintPlan());
+    panel.classList.add('visible');
   }
-  el.innerHTML = `<span class="hint-text">傾き&thinsp;${slopeHtml}</span>`;
+  initCanvas(); // the panel takes space from the graph area
+  redrawGraph();
+}
+
+function renderHint() {
+  const plan = buildHintPlan();
+  renderHintText(plan);
+  drawHintOverlay(plan);
+}
+
+function renderHintText(plan) {
+  const panel = document.getElementById('hint-panel');
+  if (panel) panel.innerHTML = plan.lines.filter(Boolean).map(l => `<div>${l}</div>`).join('');
+}
+
+const hintEm = s => `<span class="hint-em">${s}</span>`;
+const fmtPt = p => `(${p.x}, ${p.y})`;
+const samePt = (a, b) => a.x === b.x && a.y === b.y;
+const inGrid = (x, y) => Math.abs(x) <= 6 && Math.abs(y) <= 6;
+const leftRight = (P, Q) => P.x <= Q.x ? [P, Q] : [Q, P];
+
+function isOnQuestionLine(p, q) {
+  return p.y * q.aDenom === q.aNumer * p.x + q.b * q.aDenom;
+}
+
+// Lattice points of the question's line within -6..6 that satisfy ok(x, y)
+function latticePointsOnLine(q, ok) {
+  const pts = [];
+  for (let x = -6; x <= 6; x++) {
+    if ((q.aNumer * x) % q.aDenom !== 0) continue;
+    const y = q.aNumer * x / q.aDenom + q.b;
+    if (Math.abs(y) <= 6 && ok(x, y)) pts.push({x, y});
+  }
+  return pts;
+}
+
+// Another lattice point on the line near A: one slope step (right, then left), else the nearest valid one
+function neighborOnLine(A, q, ok) {
+  const d = q.aDenom, n = q.aNumer;
+  for (const B of [{x: A.x + d, y: A.y + n}, {x: A.x - d, y: A.y - n}]) {
+    if (ok(B.x, B.y)) return B;
+  }
+  const absSum = p => Math.abs(p.x) + Math.abs(p.y);
+  const cands = latticePointsOnLine(q, ok).filter(p => !samePt(p, A));
+  cands.sort((p, r) => Math.abs(p.x - A.x) - Math.abs(r.x - A.x) || absSum(p) - absSum(r));
+  return cands[0] || null;
+}
+
+function moveText(P, Q) {
+  const dx = Q.x - P.x, dy = Q.y - P.y;
+  return `${dx >= 0 ? '右' : '左'}に${hintEm(Math.abs(dx))}、${dy >= 0 ? '上' : '下'}に${hintEm(Math.abs(dy))}`;
+}
+
+// Advice line for reading the slope from a move of dx to the right
+function slopeAdvice(q, dx) {
+  if (dx !== q.aDenom) return '傾き＝縦の変化÷横の変化。約分も忘れずに！';
+  if (q.aNumer < 0) {
+    return q.aDenom === 1 ? '右に進んで下がると、傾きは<span class="hint-em">マイナス</span>になるよ！'
+                          : '傾きは<span class="hint-em">マイナスの分数</span>になるね！';
+  }
+  return q.aDenom === 1 ? '傾きはいくつかな？' : '傾きは「縦の変化÷横の変化」で求めよう！';
+}
+
+// "(a)と(b)をタップしてみよう！" / "(b)にも点を打とう！" depending on what is already placed
+function tapGuide(cands, placed, verb) {
+  const rest = cands.filter(c => !placed.some(p => samePt(p, c)));
+  if (!rest.length) return '';
+  const list = rest.map(c => hintEm(fmtPt(c))).join('と');
+  return rest.length < cands.length ? `${list}にも点を打とう！` : `${list}${verb || 'をタップしてみよう！'}`;
+}
+
+// What to show for the current question / stage / placed points.
+// points: kind 'focus' (yellow), 'cand' (cyan, a point to tap), 'ref' (reference only)
+function buildHintPlan() {
+  const q = state.currentQuestion;
+  const stage = state.hintStage;
+  const hard = state.hardMode;
+  const linear = state.range === 'linear';
+  const O = {x: 0, y: 0}, I = {x: 0, y: q.b};
+  const plan = { lines: [], points: [], arrow: null };
+
+  if (state.mode === 'answer') {
+    if (linear) {
+      // HARD: reuse the 2 points already labeled on the graph
+      const P = (hard && q.hardLinearPoints) ? q.hardLinearPoints[1] : neighborOnLine(I, q, inGrid);
+      plan.points.push({...I, kind: 'focus', coord: !hard, tag: `切片 ${q.b}`});
+      if (stage === 1) {
+        plan.lines = [`まずは${hintEm('切片')}を見つけよう！`, `直線が${hintEm('y軸')}と交わるところに注目！`];
+      } else {
+        const [L, R] = leftRight(I, P);
+        plan.points.push({...P, kind: 'focus', coord: !hard});
+        plan.arrow = {from: L, to: R};
+        plan.lines = [`次は${hintEm('傾き')}を求めよう！`,
+                      `${samePt(L, I) ? '' : hintEm(fmtPt(L)) + 'から'}${moveText(L, R)}進むよ！`,
+                      slopeAdvice(q, R.x - L.x)];
+      }
+    } else {
+      const P = (hard && q.hardPropPoint) ? q.hardPropPoint : {x: q.aDenom, y: q.aNumer};
+      plan.points.push({...O, kind: 'focus', tag: '原点'}, {...P, kind: 'focus', coord: !hard});
+      if (stage === 1) {
+        plan.lines = [`比例のグラフは必ず${hintEm('原点')}を通るよ！`, '原点から、直線上の別の点を探してみよう！'];
+      } else {
+        const [L, R] = leftRight(O, P);
+        plan.arrow = {from: L, to: R};
+        plan.lines = [`${samePt(L, O) ? '原点' : hintEm(fmtPt(L))}から${moveText(L, R)}進むよ！`,
+                      slopeAdvice(q, R.x - L.x)];
+      }
+    }
+    return plan;
+  }
+
+  // Connect mode: take the player's points into account (the fixed origin of 比例NORMAL is not the player's)
+  const placed = state.connectPoints.filter(p => hard || linear || !samePt(p, O));
+  const correct = placed.filter(p => isOnQuestionLine(p, q));
+  const ok = isTappablePoint;
+  let fixText = '今の点を消して、光っている点をタップしてみよう！';
+
+  if (linear && !hard) {
+    if (stage === 1) {
+      plan.points.push({...I, kind: 'cand', coord: true, tag: `切片 ${q.b}`});
+      plan.lines = [`まずは${hintEm('切片')}に注目！ y軸と交わるところだよ。`,
+                    `切片は${hintEm(q.b)}！ ` + (tapGuide([I], placed, 'をタップしよう！') || `${hintEm(fmtPt(I))}はOK！`)];
+    } else {
+      const A = correct[0] || I;
+      const B = neighborOnLine(A, q, ok);
+      plan.points.push({...A, kind: 'cand', coord: true, tag: samePt(A, I) ? `切片 ${q.b}` : ''});
+      plan.lines = [`${hintEm('傾き')}に注目！`];
+      if (B) {
+        const [L, R] = leftRight(A, B);
+        plan.points.push({...B, kind: 'cand', coord: true});
+        plan.arrow = {from: L, to: R};
+        plan.lines.push(`${hintEm(fmtPt(L))}から${moveText(L, R)}！`, tapGuide([A, B], placed));
+      }
+    }
+  } else if (linear && hard) {
+    const C1 = correct[0] || neighborOnLine(I, q, ok);
+    plan.points.push({...I, kind: 'ref', tag: `切片 ${q.b}`});
+    if (stage === 1) {
+      plan.lines = [`HARDでは${hintEm('y軸上')}に点を打てないよ！`];
+      if (C1) {
+        plan.points.push({...C1, kind: 'cand', coord: true});
+        plan.arrow = {from: I, to: C1};
+        plan.lines.push(`切片は${hintEm(q.b)}！ ${moveText(I, C1)}進むと`, `${hintEm(fmtPt(C1))}になるよ！`);
+      }
+    } else {
+      const C2 = C1 && neighborOnLine(C1, q, ok);
+      plan.lines = ['y軸以外の点を2つ選ぼう！'];
+      if (C1 && C2) {
+        const [L, R] = leftRight(C1, C2);
+        plan.points.push({...C1, kind: 'cand', coord: true}, {...C2, kind: 'cand', coord: true});
+        plan.arrow = {from: L, to: R};
+        plan.lines.push(`${hintEm(fmtPt(L))}から${moveText(L, R)}！`, tapGuide([C1, C2], placed));
+      }
+    }
+  } else if (!linear && hard) {
+    const C1 = correct[0] || neighborOnLine(O, q, ok);
+    plan.points.push({...O, kind: 'ref', tag: '原点'});
+    if (stage === 1) {
+      plan.lines = [`比例のグラフは${hintEm('原点')}を通るよ！`, 'でもHARDでは原点を使えない！'];
+      if (C1) {
+        plan.points.push({...C1, kind: 'cand', coord: true});
+        plan.arrow = {from: O, to: C1};
+        plan.lines.push(`原点から${moveText(O, C1)}で${hintEm(fmtPt(C1))}だよ！`);
+      }
+    } else {
+      const absSum = p => Math.abs(p.x) + Math.abs(p.y);
+      const C2 = C1 && latticePointsOnLine(q, ok).filter(p => !samePt(p, C1)).sort((p, r) => absSum(p) - absSum(r))[0];
+      plan.lines = ['原点以外の点を2つ使おう！'];
+      if (C1 && C2) {
+        plan.points.push({...C1, kind: 'cand', coord: true}, {...C2, kind: 'cand', coord: true});
+        plan.lines.push(tapGuide([C1, C2], placed, 'を結んでみよう！'));
+      }
+    }
+  } else {
+    // 比例 NORMAL: origin is fixed, the player taps 1 point (a new tap replaces the old one)
+    const P = {x: q.aDenom, y: q.aNumer};
+    plan.points.push({...O, kind: 'focus', tag: '原点'});
+    fixText = '光っている点をタップし直そう！';
+    if (stage === 1) {
+      plan.lines = [`比例のグラフは${hintEm('原点')}を通るよ！`, '傾きの数字を見て、どちらに進むか考えよう！',
+                    q.aNumer > 0 ? `傾きはプラス → 右に進んで${hintEm('上')}へ！` : `傾きはマイナス → 右に進んで${hintEm('下')}へ！`];
+    } else {
+      plan.points.push({...P, kind: 'cand', coord: true});
+      plan.arrow = {from: O, to: P};
+      plan.lines = [`原点から${moveText(O, P)}！`, `${hintEm(fmtPt(P))}をタップしよう！`];
+    }
+  }
+
+  // A wrong point is placed: tell how to redo it (only when a point to tap is shown)
+  if (placed.length > correct.length && plan.points.some(p => p.kind === 'cand')) {
+    if (plan.lines.length >= 3) plan.lines.shift();
+    plan.lines.push(fixText);
+  }
+  return plan;
+}
+
+const HINT_COLORS = { h: '#ff7a00', v: '#00a651', focus: '#c99a00', cand: '#0096d6', ref: '#a88400' };
+const LABEL_DIRS = { r: [1, 0], l: [-1, 0], u: [0, -1], d: [0, 1], ur: [1, -1], ul: [-1, -1], dr: [1, 1], dl: [-1, 1] };
+
+function rectsOverlap(a, b) {
+  return a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+}
+
+// Whether the question's line (drawn in answer mode) passes through canvas rect r
+function questionLineCrossesRect(r) {
+  if (state.mode !== 'answer') return false;
+  const q = state.currentQuestion;
+  const cyAt = cx => originY - (q.aNumer / q.aDenom * ((cx - originX) / cellSize) + q.b) * cellSize;
+  const y1 = cyAt(r.x), y2 = cyAt(r.x + r.w);
+  return Math.max(y1, y2) > r.y && Math.min(y1, y2) < r.y + r.h;
+}
+
+// Pick the best spot around (cx, cy) for a label box (inside the canvas, away from other labels/marks/line).
+// Returns a function that draws it, so all labels can be drawn on top at the end.
+function placeHintLabel(ctx, text, cx, cy, gap, prefs, color, rects, fs) {
+  ctx.font = `bold ${fs}px sans-serif`;
+  const w = ctx.measureText(text).width + 8, h = fs + 6, sz = canvasSize;
+  const dirs = prefs.concat(Object.keys(LABEL_DIRS).filter(k => !prefs.includes(k)));
+  let best = null;
+  dirs.forEach((dir, i) => {
+    const [ux, uy] = LABEL_DIRS[dir];
+    let x = ux > 0 ? cx + gap : ux < 0 ? cx - gap - w : cx - w / 2;
+    let y = uy > 0 ? cy + gap : uy < 0 ? cy - gap - h : cy - h / 2;
+    const out = x < 2 || y < 2 || x + w > sz - 2 || y + h > sz - 2;
+    x = Math.min(Math.max(x, 2), sz - 2 - w);
+    y = Math.min(Math.max(y, 2), sz - 2 - h);
+    const r = {x, y, w, h};
+    let score = i + (out ? 30 : 0) + (questionLineCrossesRect(r) ? 40 : 0);
+    rects.forEach(o => { if (rectsOverlap(r, o)) score += 100; });
+    if (!best || score < best.score) best = {score, r};
+  });
+  rects.push(best.r);
+  const {x, y} = best.r;
+  return () => {
+    ctx.font = `bold ${fs}px sans-serif`;
+    ctx.fillStyle = 'rgba(255,255,255,0.92)';
+    ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.setLineDash([]);
+    const rad = 4;
+    ctx.beginPath();
+    ctx.moveTo(x + rad, y); ctx.lineTo(x + w - rad, y); ctx.quadraticCurveTo(x + w, y, x + w, y + rad);
+    ctx.lineTo(x + w, y + h - rad); ctx.quadraticCurveTo(x + w, y + h, x + w - rad, y + h);
+    ctx.lineTo(x + rad, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - rad);
+    ctx.lineTo(x, y + rad); ctx.quadraticCurveTo(x, y, x + rad, y);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = color === HINT_COLORS.h || color === HINT_COLORS.v ? color : '#222222';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText(text, x + 4, y + h / 2 + 1);
+  };
+}
+
+// Dashed guide arrow from canvas point P to Q
+function drawHintSegment(ctx, P, Q, color) {
+  const dx = Q.cx - P.cx, dy = Q.cy - P.cy;
+  if (Math.abs(dx) + Math.abs(dy) < 4) return;
+  const angle = Math.atan2(dy, dx), head = 10;
+  ctx.strokeStyle = color; ctx.fillStyle = color;
+  ctx.lineWidth = 3; ctx.lineCap = 'round';
+  ctx.setLineDash([6, 4]);
+  ctx.beginPath(); ctx.moveTo(P.cx, P.cy);
+  ctx.lineTo(Q.cx - (head - 2) * Math.cos(angle), Q.cy - (head - 2) * Math.sin(angle)); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.beginPath();
+  ctx.moveTo(Q.cx, Q.cy);
+  ctx.lineTo(Q.cx - head * Math.cos(angle - Math.PI / 6), Q.cy - head * Math.sin(angle - Math.PI / 6));
+  ctx.lineTo(Q.cx - head * Math.cos(angle + Math.PI / 6), Q.cy - head * Math.sin(angle + Math.PI / 6));
+  ctx.closePath(); ctx.fill();
+}
+
+function drawHintPoint(ctx, p) {
+  const {cx, cy} = toCanvas(p.x, p.y);
+  ctx.setLineDash([]);
+  if (p.kind === 'ref') {
+    ctx.strokeStyle = HINT_COLORS.ref; ctx.lineWidth = 2; ctx.setLineDash([3, 3]);
+    ctx.beginPath(); ctx.arc(cx, cy, 11, 0, Math.PI * 2); ctx.stroke();
+    ctx.setLineDash([]);
+    return;
+  }
+  if (p.kind === 'focus') {
+    ctx.fillStyle = 'rgba(255, 210, 0, 0.35)';
+    ctx.beginPath(); ctx.arc(cx, cy, 15, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#ffd400'; ctx.strokeStyle = '#7a5c00'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(cx, cy, 7, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    return;
+  }
+  // cand: glowing ring; the inner dot is left out when the player already put a point there
+  ctx.fillStyle = 'rgba(0, 200, 255, 0.28)';
+  ctx.beginPath(); ctx.arc(cx, cy, 16, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = HINT_COLORS.cand; ctx.lineWidth = 2.5;
+  ctx.beginPath(); ctx.arc(cx, cy, 11, 0, Math.PI * 2); ctx.stroke();
+  if (!state.connectPoints.some(c => samePt(c, p))) {
+    ctx.fillStyle = '#5fe0ff'; ctx.strokeStyle = '#006a99'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(cx, cy, 6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  }
+}
+
+function drawHintOverlay(plan) {
+  const ctx = graphCtx;
+  const fs = Math.max(11, Math.round(canvasSize / 27));
+  ctx.save();
+  // Obstacles for labels: base graph labels, the "O" label, hint points, guide arrows
+  const rects = baseLabelRects.slice();
+  rects.push({x: originX - 6 - fs, y: originY + 4, w: fs + 2, h: fs});
+  plan.points.forEach(p => {
+    const {cx, cy} = toCanvas(p.x, p.y);
+    rects.push({x: cx - 10, y: cy - 10, w: 20, h: 20});
+  });
+
+  const labelDrawers = [];
+  if (plan.arrow) {
+    const {from, to} = plan.arrow;
+    const A = toCanvas(from.x, from.y), C = toCanvas(to.x, from.y), B = toCanvas(to.x, to.y);
+    const dx = to.x - from.x, dy = to.y - from.y;
+    drawHintSegment(ctx, A, C, HINT_COLORS.h);
+    drawHintSegment(ctx, C, B, HINT_COLORS.v);
+    rects.push({x: Math.min(A.cx, C.cx), y: A.cy - 3, w: Math.abs(C.cx - A.cx), h: 6});
+    rects.push({x: C.cx - 3, y: Math.min(C.cy, B.cy), w: 6, h: Math.abs(B.cy - C.cy)});
+    // Horizontal label on the side away from the vertical move, vertical label outside the triangle
+    labelDrawers.push(placeHintLabel(ctx, `${dx > 0 ? '右' : '左'}に${Math.abs(dx)}`, (A.cx + C.cx) / 2, A.cy, 5,
+      dy > 0 ? ['d', 'u'] : ['u', 'd'], HINT_COLORS.h, rects, fs));
+    labelDrawers.push(placeHintLabel(ctx, `${dy > 0 ? '上' : '下'}に${Math.abs(dy)}`, C.cx, (C.cy + B.cy) / 2, 5,
+      dx > 0 ? ['r', 'l'] : ['l', 'r'], HINT_COLORS.v, rects, fs));
+  }
+
+  plan.points.forEach(p => drawHintPoint(ctx, p));
+
+  plan.points.forEach(p => {
+    const text = [p.tag, p.coord ? fmtPt(p) : ''].filter(Boolean).join(' ');
+    if (!text) return;
+    const {cx, cy} = toCanvas(p.x, p.y);
+    const prefs = p.x === 0 ? ['l', 'ul', 'dl', 'r', 'ur', 'dr'] : ['ur', 'dr', 'ul', 'dl', 'r', 'l'];
+    labelDrawers.push(placeHintLabel(ctx, text, cx, cy, 12, prefs, HINT_COLORS[p.kind], rects, fs));
+  });
+
+  labelDrawers.forEach(draw => draw());
+  ctx.restore();
 }
 
 function formatFormula(q) {
@@ -2789,6 +3182,16 @@ function onCanvasTouch(e) {
   handlePointInput(px, py);
 }
 
+// Whether the player may tap grid point (x, y) in connect mode
+function isTappablePoint(x, y) {
+  if (x < -6 || x > 6 || y < -6 || y > 6) return false;
+  // Hard connect+linear: y-axis (x=0) forbidden
+  if (state.hardMode && state.range === 'linear' && x === 0) return false;
+  // Proportion: origin is fixed (NORMAL) or forbidden (HARD)
+  if (state.range === 'proportion' && x === 0 && y === 0) return false;
+  return true;
+}
+
 function handlePointInput(px, py) {
   if (state.isPaused) return; // ignore taps during correct-feedback display
   // Convert to grid
@@ -2797,16 +3200,11 @@ function handlePointInput(px, py) {
   const igx = Math.round(gx);
   const igy = Math.round(gy);
 
-  // Check within range
-  if (igx < -6 || igx > 6 || igy < -6 || igy > 6) return;
+  // Out of range / forbidden points (shared with hint candidate selection)
+  if (!isTappablePoint(igx, igy)) return;
 
-  // Hard connect+linear: y-axis (x=0) forbidden
-  if (state.hardMode && state.mode === 'connect' && state.range === 'linear') {
-    if (igx === 0) return;
-  }
-  // Hard connect+proportion: origin forbidden, 2-point mode
+  // Hard connect+proportion: 2-point mode
   if (state.hardMode && state.mode === 'connect' && state.range === 'proportion') {
-    if (igx === 0 && igy === 0) return; // origin forbidden
     const existingIdx = state.connectPoints.findIndex(p => p.x === igx && p.y === igy);
     if (existingIdx !== -1) { state.connectPoints.splice(existingIdx, 1); playSound('dot-remove'); }
     else if (state.connectPoints.length >= 2) { state.connectPoints = [state.connectPoints[0], {x:igx,y:igy}]; playSound('dot-place'); }
@@ -2817,7 +3215,6 @@ function handlePointInput(px, py) {
   }
   // Normal proportion: origin is fixed, player adds 1 point
   if (state.range === 'proportion' && !state.hardMode) {
-    if (igx === 0 && igy === 0) return; // can't click origin
     state.connectPoints = [{x:0,y:0}, {x:igx, y:igy}];
     playSound('dot-place');
   } else if (state.range === 'proportion' && state.hardMode) {
@@ -2899,7 +3296,7 @@ function checkConnectAnswer() {
   if (pts.length < 2) return;
 
   const p1 = pts[0], p2 = pts[1];
-  if (p1.x === p2.x) { onWrong(); state.connectPoints = []; redrawGraph(); return; }
+  if (p1.x === p2.x) { onConnectWrong(); return; } // vertical line
 
   const slopeNum = p2.y - p1.y;
   const slopeDen = p2.x - p1.x;
@@ -2910,7 +3307,7 @@ function checkConnectAnswer() {
   // Compute b: b = y - slope*x = p1.y - (rn/rd)*p1.x
   // b = (p1.y * rd - rn * p1.x) / rd
   const bNum = p1.y * rd - rn * p1.x;
-  if (bNum % rd !== 0) { onWrong(); state.connectPoints = []; redrawGraph(); return; }
+  if (bNum % rd !== 0) { onConnectWrong(); return; } // non-integer intercept
   const b = bNum / rd;
 
   const q = state.currentQuestion;
@@ -2920,12 +3317,16 @@ function checkConnectAnswer() {
   if (rn === qrn && rd === qrd && b === q.b) {
     onCorrect();
   } else {
-    // Wrong: count and warn if reckless tapping
-    // 比例NORMAL: 2回, それ以外: 4回
-    const warnThreshold = state.range === 'proportion' ? 2 : 4;
-    state.wrongTapCount++;
-    if (state.wrongTapCount >= warnThreshold) showTapWarning();
+    onConnectWrong();
   }
+}
+
+function onConnectWrong() {
+  // Wrong: count and warn if reckless tapping
+  // 比例: 2回, 一次関数: 4回
+  const warnThreshold = state.range === 'proportion' ? 2 : 4;
+  state.wrongTapCount++;
+  if (state.wrongTapCount >= warnThreshold) showTapWarning();
 }
 
 function clearPoints() {
