@@ -297,6 +297,7 @@ html, body {
 
 /* ===== GAME SCREEN ===== */
 #game-screen {
+  position: relative;
   padding: 0;
   justify-content: flex-start;
   background: #060616;
@@ -455,25 +456,42 @@ html, body {
 }
 .hint-btn.done {
   background: #3a3f55;
-  color: #aab4cc;
-  cursor: default;
+  color: #d0d8ea;
   box-shadow: none;
 }
 
-/* Hint text panel (between graph and input/actions) */
+/* Hint text toast (slides down over the header; the graph keeps its size). Tap to close. */
 .hint-panel {
   display: none;
-  flex-shrink: 0;
-  padding: 6px 12px;
-  background: rgba(255, 212, 0, 0.08);
-  border-top: 1px solid rgba(255, 212, 0, 0.35);
+  position: absolute;
+  top: 6px;
+  left: 8px;
+  right: 8px;
+  z-index: 90;
+  padding: 8px 30px 8px 12px;
+  background: rgba(16, 18, 44, 0.95);
+  border: 1.5px solid #ffd400;
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55);
   font-size: clamp(12px, 3.6vw, 14px);
   font-weight: 600;
   line-height: 1.55;
   color: var(--text);
-  min-height: calc(1.55em * 3 + 12px);
+  cursor: pointer;
 }
-.hint-panel.visible { display: block; }
+.hint-panel.visible { display: block; animation: hintToastIn 0.22s ease-out; }
+@keyframes hintToastIn {
+  from { transform: translateY(-120%); opacity: 0; }
+  to   { transform: translateY(0);     opacity: 1; }
+}
+.hint-panel-close {
+  position: absolute;
+  top: 4px;
+  right: 9px;
+  font-size: 16px;
+  color: var(--text-dim);
+  pointer-events: none;
+}
 .hint-em {
   color: #ffd400;
   font-weight: 900;
@@ -798,15 +816,15 @@ canvas {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background: var(--panel);
+  background: rgba(15, 15, 42, 0.72);
   border: 2px solid var(--correct);
   border-radius: 16px;
   padding: 18px 20px;
   text-align: center;
   z-index: 250;
   display: none;
-  box-shadow: 0 6px 24px rgba(0,0,0,0.6);
-  min-width: 240px;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.4);
+  min-width: 260px;
 }
 .practice-mode-popup.visible {
   display: block;
@@ -819,12 +837,36 @@ canvas {
   margin-bottom: 14px;
 }
 .practice-mode-popup-btns {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 10px;
 }
 .practice-mode-popup-btns .result-btn {
   padding: 12px 10px;
   white-space: nowrap;
+}
+.practice-mode-popup-btns .result-btn.primary { grid-column: 1 / -1; }
+
+/* While the popup is hidden to look at the graph: one tap anywhere brings it back */
+.practice-graph-catcher {
+  position: fixed;
+  inset: 0;
+  z-index: 240;
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 24px;
+  cursor: pointer;
+}
+.practice-graph-catcher.visible { display: flex; }
+.practice-graph-catcher-note {
+  background: rgba(0, 0, 0, 0.82);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 14px;
+  pointer-events: none;
 }
 
 /* Game header in practice mode: no timer / score / combo */
@@ -1296,6 +1338,9 @@ canvas {
 
   <!-- Game body (mode-specific content injected here) -->
   <div class="game-body" id="game-body"></div>
+
+  <!-- Hint text toast (over the header) -->
+  <div class="hint-panel" id="hint-panel" onclick="closeHintToast()"></div>
 </div>
 
 <!-- RESULT SCREEN -->
@@ -1532,8 +1577,12 @@ canvas {
   <div class="practice-mode-popup-msg">正解！</div>
   <div class="practice-mode-popup-btns">
     <button class="result-btn primary" onclick="onPracticeModeNext()">次へ</button>
+    <button class="result-btn secondary" onclick="onPracticeModeShowGraph()">グラフを見る</button>
     <button class="result-btn secondary" onclick="onPracticeModeQuit()">練習をやめる</button>
   </div>
+</div>
+<div class="practice-graph-catcher" id="practice-graph-catcher" onclick="onPracticeModeReshow()">
+  <span class="practice-graph-catcher-note">画面をタップすると戻るよ</span>
 </div>
 
 <!-- Screen flash overlay (5-combo milestone) -->
@@ -2355,6 +2404,19 @@ function goTitle() {
 
 function hidePracticeModePopup() {
   document.getElementById('practice-mode-popup').classList.remove('visible');
+  document.getElementById('practice-graph-catcher').classList.remove('visible');
+}
+
+// グラフを見る: hide the popup; a full-screen transparent layer catches the next tap
+// (so the tap does not reach the game) and brings the popup back
+function onPracticeModeShowGraph() {
+  document.getElementById('practice-mode-popup').classList.remove('visible');
+  document.getElementById('practice-graph-catcher').classList.add('visible');
+}
+
+function onPracticeModeReshow() {
+  document.getElementById('practice-graph-catcher').classList.remove('visible');
+  document.getElementById('practice-mode-popup').classList.add('visible');
 }
 
 function onPracticeModeNext() {
@@ -2377,7 +2439,6 @@ function buildGameBody() {
       <div class="answer-graph-area" id="answer-graph-area">
         <canvas id="graph-canvas"></canvas>
       </div>
-      <div class="hint-panel" id="hint-panel"></div>
       <div class="answer-input-area">
         <div class="answer-display" id="answer-display">
           <span class="prefix"><span class="math-var" style="font-family:'Times New Roman',serif;font-style:italic;font-weight:bold">y</span>&nbsp;=&nbsp;</span>
@@ -2395,7 +2456,6 @@ function buildGameBody() {
       <div class="connect-graph-area" id="connect-graph-area">
         <canvas id="graph-canvas"></canvas>
       </div>
-      <div class="hint-panel" id="hint-panel"></div>
       <div class="connect-actions">
         <button class="clear-pts-btn" onclick="clearPoints()">点を消す</button>
         <span class="hint-area" id="hint-area"></span>
@@ -2791,22 +2851,36 @@ function showHintButton() {
   state.hintTimeout = null;
   const area = document.getElementById('hint-area');
   if (!area) return;
-  const done = state.hintStage >= 2;
-  const label = ['ヒント', '次のヒント', 'ヒント表示中'][state.hintStage];
-  area.innerHTML = `<button class="hint-btn${done ? ' done' : ''}" onclick="onHintPress()"${done ? ' disabled' : ''}>${label}</button>`;
+  // ヒント → ヒント① (次のヒント) → ヒント② (ヒント非表示) → back to ヒント
+  const label = ['ヒント', '次のヒント', 'ヒント非表示'][state.hintStage];
+  area.innerHTML = `<button class="hint-btn${state.hintStage >= 2 ? ' done' : ''}" onclick="onHintPress()">${label}</button>`;
 }
 
 function onHintPress() {
-  if (state.isPaused || state.hintStage >= 2) return;
+  if (state.isPaused) return;
+  if (state.hintStage >= 2) {
+    // ヒント非表示: hide text and marks; the next press starts again from ヒント①
+    state.hintStage = 0;
+    closeHintToast();
+    showHintButton();
+    redrawGraph();
+    return;
+  }
   state.hintStage++;
-  showHintButton();
   const panel = document.getElementById('hint-panel');
   if (panel) {
-    renderHintText(buildHintPlan());
+    panel.classList.remove('visible');
+    void panel.offsetWidth; // replay the slide-in
     panel.classList.add('visible');
   }
-  initCanvas(); // the panel takes space from the graph area
-  redrawGraph();
+  showHintButton();
+  redrawGraph(); // marks on the graph + toast text
+}
+
+// Tap on the toast: hide the text (marks on the graph stay)
+function closeHintToast() {
+  const panel = document.getElementById('hint-panel');
+  if (panel) panel.classList.remove('visible');
 }
 
 function renderHint() {
@@ -2817,7 +2891,8 @@ function renderHint() {
 
 function renderHintText(plan) {
   const panel = document.getElementById('hint-panel');
-  if (panel) panel.innerHTML = plan.lines.filter(Boolean).map(l => `<div>${l}</div>`).join('');
+  if (panel) panel.innerHTML = plan.lines.filter(Boolean).map(l => `<div>${l}</div>`).join('') +
+    '<span class="hint-panel-close">×</span>';
 }
 
 const hintEm = s => `<span class="hint-em">${s}</span>`;
@@ -2897,8 +2972,7 @@ function buildHintPlan() {
         const [L, R] = leftRight(I, P);
         plan.points.push({...P, kind: 'focus', coord: !hard});
         plan.arrow = {from: L, to: R};
-        plan.lines = [`次は${hintEm('傾き')}を求めよう！`,
-                      `${samePt(L, I) ? '' : hintEm(fmtPt(L)) + 'から'}${moveText(L, R)}進むよ！`,
+        plan.lines = [`${samePt(L, I) ? '' : hintEm(fmtPt(L)) + 'から'}${moveText(L, R)}進むよ！`,
                       slopeAdvice(q, R.x - L.x)];
       }
     } else {
@@ -2920,7 +2994,7 @@ function buildHintPlan() {
   const placed = state.connectPoints.filter(p => hard || linear || !samePt(p, O));
   const correct = placed.filter(p => isOnQuestionLine(p, q));
   const ok = isTappablePoint;
-  let fixText = '今の点を消して、光っている点をタップしてみよう！';
+  let fixText = '今の点を消して、光っている点をタップしよう！';
 
   if (linear && !hard) {
     if (stage === 1) {
@@ -2931,7 +3005,7 @@ function buildHintPlan() {
       const A = correct[0] || I;
       const B = neighborOnLine(A, q, ok);
       plan.points.push({...A, kind: 'cand', coord: true, tag: samePt(A, I) ? `切片 ${q.b}` : ''});
-      plan.lines = [`${hintEm('傾き')}に注目！`];
+      plan.lines = [];
       if (B) {
         const [L, R] = leftRight(A, B);
         plan.points.push({...B, kind: 'cand', coord: true});
@@ -2947,11 +3021,11 @@ function buildHintPlan() {
       if (C1) {
         plan.points.push({...C1, kind: 'cand', coord: true});
         plan.arrow = {from: I, to: C1};
-        plan.lines.push(`切片は${hintEm(q.b)}！ ${moveText(I, C1)}進むと`, `${hintEm(fmtPt(C1))}になるよ！`);
+        plan.lines.push(`切片から${moveText(I, C1)}で${hintEm(fmtPt(C1))}！`);
       }
     } else {
       const C2 = C1 && neighborOnLine(C1, q, ok);
-      plan.lines = ['y軸以外の点を2つ選ぼう！'];
+      plan.lines = [];
       if (C1 && C2) {
         const [L, R] = leftRight(C1, C2);
         plan.points.push({...C1, kind: 'cand', coord: true}, {...C2, kind: 'cand', coord: true});
@@ -2963,7 +3037,7 @@ function buildHintPlan() {
     const C1 = correct[0] || neighborOnLine(O, q, ok);
     plan.points.push({...O, kind: 'ref', tag: '原点'});
     if (stage === 1) {
-      plan.lines = [`比例のグラフは${hintEm('原点')}を通るよ！`, 'でもHARDでは原点を使えない！'];
+      plan.lines = [`${hintEm('原点')}は通るけど、HARDでは使えないよ！`];
       if (C1) {
         plan.points.push({...C1, kind: 'cand', coord: true});
         plan.arrow = {from: O, to: C1};
@@ -2984,8 +3058,8 @@ function buildHintPlan() {
     plan.points.push({...O, kind: 'focus', tag: '原点'});
     fixText = '光っている点をタップし直そう！';
     if (stage === 1) {
-      plan.lines = [`比例のグラフは${hintEm('原点')}を通るよ！`, '傾きの数字を見て、どちらに進むか考えよう！',
-                    q.aNumer > 0 ? `傾きはプラス → 右に進んで${hintEm('上')}へ！` : `傾きはマイナス → 右に進んで${hintEm('下')}へ！`];
+      plan.lines = [`比例のグラフは${hintEm('原点')}を通るよ！`,
+                    q.aNumer > 0 ? `傾きはプラスだから、右に進んで${hintEm('上')}へ！` : `傾きはマイナスだから、右に進んで${hintEm('下')}へ！`];
     } else {
       plan.points.push({...P, kind: 'cand', coord: true});
       plan.arrow = {from: O, to: P};
@@ -2993,10 +3067,10 @@ function buildHintPlan() {
     }
   }
 
-  // A wrong point is placed: tell how to redo it (only when a point to tap is shown)
+  // A wrong point is placed: tell how to redo it (only when a point to tap is shown); max 2 lines
+  plan.lines = plan.lines.filter(Boolean);
   if (placed.length > correct.length && plan.points.some(p => p.kind === 'cand')) {
-    if (plan.lines.length >= 3) plan.lines.shift();
-    plan.lines.push(fixText);
+    plan.lines = plan.lines.slice(-1).concat(fixText);
   }
   return plan;
 }
