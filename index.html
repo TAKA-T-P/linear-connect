@@ -175,6 +175,12 @@ html, body {
   background: var(--accent3);
   color: #fff;
 }
+/* 4 buttons (練習/1分/3分/チャレンジ) on one row even on narrow phones */
+.time-toggle .toggle-btn {
+  padding: 12px 2px;
+  font-size: clamp(12px, 3.6vw, 14px);
+  white-space: nowrap;
+}
 
 /* Graph color swatches */
 .color-swatches {
@@ -759,6 +765,57 @@ canvas {
   animation: feedbackPop 0.18s ease-out;
 }
 
+/* Practice mode (練習) correct popup */
+.practice-mode-popup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--panel);
+  border: 2px solid var(--correct);
+  border-radius: 16px;
+  padding: 18px 20px;
+  text-align: center;
+  z-index: 250;
+  display: none;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.6);
+  min-width: 240px;
+}
+.practice-mode-popup.visible {
+  display: block;
+  animation: feedbackPop 0.18s ease-out;
+}
+.practice-mode-popup-msg {
+  font-size: 30px;
+  font-weight: 900;
+  color: var(--correct);
+  margin-bottom: 14px;
+}
+.practice-mode-popup-btns {
+  display: flex;
+  gap: 10px;
+}
+.practice-mode-popup-btns .result-btn {
+  padding: 12px 10px;
+  white-space: nowrap;
+}
+
+/* Game header in practice mode: no timer / score / combo */
+.practice-mode-label {
+  display: none;
+  flex: 1;
+  font-size: 16px;
+  font-weight: 900;
+  color: var(--correct);
+  letter-spacing: 2px;
+  padding: 4px 0;
+}
+#game-screen.practice-mode .practice-mode-label { display: block; }
+#game-screen.practice-mode .timer-block,
+#game-screen.practice-mode .score-block,
+#game-screen.practice-mode .combo-block,
+#game-screen.practice-mode .combo-gauge-wrap { display: none; }
+
 /* Screen flash for 5-combo milestones */
 #flash-overlay {
   position: fixed;
@@ -1148,7 +1205,8 @@ canvas {
       <label>プレイ時間</label>
       <span class="challenge-hint" id="challenge-hint">コンボが切れたら即終了！</span>
     </div>
-    <div class="toggle-group">
+    <div class="toggle-group time-toggle">
+      <button class="toggle-btn" onclick="selectTime('practice')">練習</button>
       <button class="toggle-btn active" onclick="selectTime(60)">1分</button>
       <button class="toggle-btn" onclick="selectTime(180)">3分</button>
       <button class="toggle-btn" onclick="selectTime('challenge')">チャレンジ</button>
@@ -1193,6 +1251,7 @@ canvas {
       <div class="score-label">SCORE</div>
       <div class="score-value" id="score-val">0</div>
     </div>
+    <div class="practice-mode-label">練習モード</div>
     <div class="combo-block">
       <div class="combo-label">COMBO</div>
       <div class="combo-value" id="combo-val">0</div>
@@ -1441,6 +1500,15 @@ canvas {
 <!-- Time warning overlay (残り1分 / 残り30秒) -->
 <div class="time-warning-overlay" id="time-warning-overlay"></div>
 
+<!-- Practice mode (練習) correct popup -->
+<div class="practice-mode-popup" id="practice-mode-popup">
+  <div class="practice-mode-popup-msg">正解！</div>
+  <div class="practice-mode-popup-btns">
+    <button class="result-btn primary" onclick="onPracticeModeNext()">次へ</button>
+    <button class="result-btn secondary" onclick="onPracticeModeQuit()">練習をやめる</button>
+  </div>
+</div>
+
 <!-- Screen flash overlay (5-combo milestone) -->
 <div id="flash-overlay"></div>
 
@@ -1536,9 +1604,10 @@ function selectRange(range) {
 function selectTime(sec) {
   state.timeLimit = sec;
   const btns = document.querySelectorAll('.toggle-group')[1].querySelectorAll('.toggle-btn');
-  btns[0].classList.toggle('active', sec === 60);
-  btns[1].classList.toggle('active', sec === 180);
-  btns[2].classList.toggle('active', sec === 'challenge');
+  btns[0].classList.toggle('active', sec === 'practice');
+  btns[1].classList.toggle('active', sec === 60);
+  btns[2].classList.toggle('active', sec === 180);
+  btns[3].classList.toggle('active', sec === 'challenge');
   const hint = document.getElementById('challenge-hint');
   if (hint) hint.style.display = sec === 'challenge' ? 'inline' : 'none';
 }
@@ -1553,7 +1622,8 @@ function showScreen(id) {
 // ========================
 function startGame() {
   // setup countdown labels
-  const modeLabel = state.mode === 'answer' ? 'ANSWER MODE' : 'CONNECT MODE';
+  let modeLabel = state.mode === 'answer' ? 'ANSWER MODE' : 'CONNECT MODE';
+  if (state.timeLimit === 'practice') modeLabel += '（練習）';
   document.getElementById('cd-mode-label').textContent = modeLabel;
 
   let instr = 'グラフから式を答えよ！';
@@ -1607,7 +1677,9 @@ function initGame() {
   state.maxCombo = 0;
   state.correctCount = 0;
   state.totalAnswerTime = 0;
-  state.timerRemaining = state.timeLimit === 'challenge' ? 0 : state.timeLimit;
+  state.timerRemaining = typeof state.timeLimit === 'number' ? state.timeLimit : 0;
+  document.getElementById('game-screen').classList.toggle('practice-mode', state.timeLimit === 'practice');
+  hidePracticeModePopup();
   state.isTimeUp = false;
   state.isPaused = false;
   state.answerInput = [];
@@ -1638,7 +1710,7 @@ function updateHUD() {
   document.getElementById('combo-val').textContent = state.combo;
 
   const tv = document.getElementById('timer-val');
-  tv.classList.toggle('warning', state.timeLimit !== 'challenge' && state.timerRemaining <= 10);
+  tv.classList.toggle('warning', typeof state.timeLimit === 'number' && state.timerRemaining <= 10);
 }
 
 // ========================
@@ -1646,6 +1718,7 @@ function updateHUD() {
 // ========================
 function startTimer() {
   if (state.timerInterval) clearInterval(state.timerInterval);
+  if (state.timeLimit === 'practice') return; // 練習: no time limit
   if (state.timeLimit === 'challenge') {
     // Count-up: timer shows elapsed play time
     state.timerInterval = setInterval(() => {
@@ -1891,6 +1964,14 @@ function nextQuestion() {
 // ANSWER CORRECT / WRONG
 // ========================
 function onCorrect() {
+  if (state.timeLimit === 'practice') {
+    // 練習: no score/combo; wait for 次へ / 練習をやめる
+    clearHintTimer();
+    state.isPaused = true;
+    playSound('correct');
+    document.getElementById('practice-mode-popup').classList.add('visible');
+    return;
+  }
   const elapsed = (performance.now() - state.questionStartTime) / 1000;
   state.totalAnswerTime += elapsed;
   state.correctCount++;
@@ -2188,7 +2269,7 @@ function showResult() {
   document.getElementById('result-rank').textContent = rank;
 
   // High score
-  const hsKey = `hs_${state.mode}_${state.range}_${state.timeLimit}`;
+  const hsKey = `hs_${state.mode}_${state.range}_${state.timeLimit}${state.hardMode ? '_hard' : ''}`;
   const prevHi = parseInt(localStorage.getItem(hsKey) || '0');
   const newHi = Math.max(prevHi, state.score);
   localStorage.setItem(hsKey, newHi);
@@ -2230,12 +2311,29 @@ function calcRank(avgTime) {
 // ========================
 function retryGame() {
   stopTimer(); stopGauge();
+  hidePracticeModePopup();
   startGame();
 }
 
 function goTitle() {
   stopTimer(); stopGauge();
+  clearHintTimer();
+  hidePracticeModePopup();
   showScreen('title-screen');
+}
+
+function hidePracticeModePopup() {
+  document.getElementById('practice-mode-popup').classList.remove('visible');
+}
+
+function onPracticeModeNext() {
+  hidePracticeModePopup();
+  state.isPaused = false;
+  nextQuestion();
+}
+
+function onPracticeModeQuit() {
+  goTitle();
 }
 
 // ========================
